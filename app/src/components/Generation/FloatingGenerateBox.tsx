@@ -32,21 +32,15 @@ export function FloatingGenerateBox({
 }: FloatingGenerateBoxProps) {
   const selectedProfileId = useUIStore((state) => state.selectedProfileId);
   const setSelectedProfileId = useUIStore((state) => state.setSelectedProfileId);
-  const { data: selectedProfile } = useProfile(selectedProfileId || '');
   const { data: profiles } = useProfiles();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isInstructMode, setIsInstructMode] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const matchRoute = useMatchRoute();
   const isStoriesRoute = matchRoute({ to: '/stories' });
   const selectedStoryId = useStoryStore((state) => state.selectedStoryId);
-  const trackEditorHeight = useStoryStore((state) => state.trackEditorHeight);
   const { data: currentStory } = useStory(selectedStoryId);
   const addStoryItem = useAddStoryItem();
-  const { toast } = useToast();
-
-  const hasTrackEditor = isStoriesRoute && currentStory && currentStory.items.length > 0;
 
   const { form, handleSubmit, isPending } = useGenerationForm({
     onSuccess: async (generationId) => {
@@ -88,59 +82,38 @@ export function FloatingGenerateBox({
     <motion.div
       ref={containerRef}
       className={cn(
-        'fixed z-[100] transition-all duration-500',
-        isStoriesRoute
-          ? 'left-[calc(5rem+2rem)] w-[360px]'
-          : 'left-[calc(5rem+2rem)] w-[calc((100%-5rem-4rem)/2-1rem)]',
+        'w-full bg-[#111111] border border-white/5 rounded-2xl shadow-2xl overflow-hidden transition-all duration-300',
+        isExpanded && 'ring-1 ring-primary/20'
       )}
-      style={{
-        bottom: hasTrackEditor
-          ? `${trackEditorHeight + 24}px`
-          : isPlayerOpen
-            ? 'calc(7rem + 1.5rem)'
-            : '1.5rem',
-      }}
     >
-      <motion.div
-        layout
-        className="bg-[#191a1b] border border-[#23252a] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] overflow-hidden"
-        transition={{ type: 'spring', damping: 20, stiffness: 200 }}
-      >
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            {/* Header / Mode Indicator */}
-            <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 bg-white/2">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary tracking-tighter uppercase p-1">
-                   {isInstructMode ? <SlidersHorizontal className="h-3 w-3" /> : <Command className="h-3 w-3" />}
-                   {isInstructMode ? 'Instruction Mode' : 'Speech Text'}
-                </div>
-                <div className="flex items-center gap-2">
-                   {isExpanded && (
-                       <div className="text-[10px] text-muted-foreground flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
-                          <kbd className="opacity-70">ESC</kbd> to close
-                       </div>
-                   )}
-                   <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className={cn("h-6 w-6 rounded-md transition-colors", isInstructMode ? "text-primary bg-primary/10" : "text-muted-foreground")}
-                      onClick={() => setIsInstructMode(!isInstructMode)}
-                    >
-                      <SlidersHorizontal className="h-3 w-3" />
-                  </Button>
-                </div>
-            </div>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          {/* Header Bar */}
+          <div className="flex items-center justify-between px-4 py-2 bg-white/2 border-b border-white/5">
+              <div className="flex items-center gap-2 text-[10px] font-bold text-primary/60 uppercase tracking-widest">
+                 {isInstructMode ? <SlidersHorizontal className="h-3 w-3" /> : <Command className="h-3 w-3" />}
+                 {isInstructMode ? 'Prompt' : 'Synthesis'}
+              </div>
+              <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={cn("h-6 w-6 rounded-md", isInstructMode ? "text-primary bg-primary/10" : "text-muted-foreground")}
+                  onClick={() => setIsInstructMode(!isInstructMode)}
+                >
+                  <SlidersHorizontal className="h-3 w-3" />
+              </Button>
+          </div>
 
-            <div className="p-3">
-              <div className="relative">
+          <div className="p-4">
+             <div className="relative">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={isInstructMode ? 'instruct' : 'text'}
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 1.02 }}
-                    transition={{ duration: 0.2 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
                   >
                     <FormField
                       control={form.control}
@@ -152,20 +125,20 @@ export function FloatingGenerateBox({
                               {...field}
                               placeholder={
                                 isInstructMode 
-                                  ? "Describe the emotion, e.g., 'very happy and energetic'..." 
-                                  : "Type or paste the text you want to synthesize..."
+                                  ? "Describe the emotion..." 
+                                  : "Type the text to generate..."
                               }
                               className={cn(
-                                "resize-none bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-1 text-sm leading-relaxed placeholder:text-muted-foreground/30 transition-all min-h-[40px]",
-                                isExpanded ? "min-h-[140px]" : "min-h-[40px]"
+                                "resize-none bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 text-sm leading-relaxed placeholder:text-muted-foreground/20 transition-all",
+                                isExpanded ? "min-h-[100px]" : "min-h-[20px]"
                               )}
                               onClick={() => setIsExpanded(true)}
-                              onFocus={() => setIsExpanded(true)}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                                   e.preventDefault();
                                   form.handleSubmit(onSubmit)();
                                 }
+                                if (e.key === 'Escape') setIsExpanded(false);
                               }}
                             />
                           </FormControl>
@@ -174,109 +147,81 @@ export function FloatingGenerateBox({
                     />
                   </motion.div>
                 </AnimatePresence>
-                
-                {/* Submit Trigger - Integrated into the corner when expanded */}
-                <div className="absolute bottom-0 right-0 p-1">
-                   <Button
-                    type="submit"
-                    disabled={isPending || !selectedProfileId}
-                    size={isExpanded ? "default" : "icon"}
-                    className={cn(
-                      "transition-all duration-300 shadow-xl",
-                      isExpanded ? "px-4 rounded-lg bg-primary" : "h-8 w-8 rounded-lg bg-primary"
-                    )}
-                  >
-                    {isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <>
-                        <Sparkles className={cn("h-3.5 w-3.5", isExpanded && "mr-2")} />
-                        {isExpanded && "Generate"}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
 
-              {/* Advanced Controls Area */}
-              <AnimatePresence>
-                {isExpanded && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="mt-4 pt-4 border-t border-white/5"
-                  >
-                    <div className="flex gap-2">
-                      {showVoiceSelector && (
-                        <div className="flex-1">
-                          <Select
-                            value={selectedProfileId || ''}
-                            onValueChange={(value) => setSelectedProfileId(value || null)}
-                          >
-                            <SelectTrigger className="h-9 text-[11px] bg-[#0f1011] border-[#23252a] rounded-lg">
-                               <div className="flex items-center gap-2 truncate">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(94,106,210,0.8)]" />
-                                  <SelectValue placeholder="Voice" />
-                               </div>
-                            </SelectTrigger>
-                            <SelectContent className="bg-[#191a1b] border-[#23252a]">
-                              {profiles?.map((profile) => (
-                                <SelectItem key={profile.id} value={profile.id} className="text-xs">
-                                  {profile.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
+                {/* Inline Controls Toggle (visible when expanded) */}
+                <AnimatePresence>
+                   {isExpanded && (
+                     <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="flex gap-2 pt-4 border-t border-white/5 mt-4"
+                     >
+                        <FormField
+                          control={form.control}
+                          name="language"
+                          render={({ field }) => (
+                            <FormItem className="flex-1">
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <SelectTrigger className="h-8 text-[10px] uppercase font-bold tracking-widest bg-white/5 border-white/5 rounded-lg">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#111111] border-white/10">
+                                  {LANGUAGE_OPTIONS.map((lang) => (
+                                    <SelectItem key={lang.value} value={lang.value} className="text-[10px]">
+                                      {lang.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="modelSize"
+                          render={({ field }) => (
+                            <FormItem className="flex-1">
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <SelectTrigger className="h-8 text-[10px] uppercase font-bold tracking-widest bg-white/5 border-white/5 rounded-lg">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#111111] border-white/10">
+                                  <SelectItem value="1.7B" className="text-[10px]">Prime 1.7B</SelectItem>
+                                  <SelectItem value="0.6B" className="text-[10px]">Fast 0.6B</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormItem>
+                          )}
+                        />
+                     </motion.div>
+                   )}
+                </AnimatePresence>
+             </div>
+          </div>
 
-                      <FormField
-                        control={form.control}
-                        name="language"
-                        render={({ field }) => (
-                          <FormItem className="flex-1">
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <SelectTrigger className="h-9 text-[11px] bg-[#0f1011] border-[#23252a] rounded-lg">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent className="bg-[#191a1b] border-[#23252a]">
-                                {LANGUAGE_OPTIONS.map((lang) => (
-                                  <SelectItem key={lang.value} value={lang.value} className="text-xs">
-                                    {lang.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="modelSize"
-                        render={({ field }) => (
-                          <FormItem className="flex-1">
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <SelectTrigger className="h-9 text-[11px] bg-[#0f1011] border-[#23252a] rounded-lg">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent className="bg-[#191a1b] border-[#23252a]">
-                                <SelectItem value="1.7B" className="text-xs">Base 1.7B</SelectItem>
-                                <SelectItem value="0.6B" className="text-xs">Fast 0.6B</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </motion.div>
+          <div className="px-4 pb-4 flex justify-between items-center transition-all">
+             <div className="text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest">
+                {isPending ? 'Processing...' : (isExpanded ? 'CTRL+ENTER to generate' : '')}
+             </div>
+             <Button
+                type="submit"
+                disabled={isPending || !selectedProfileId}
+                size="sm"
+                className="h-8 rounded-lg bg-primary shadow-[0_0_15px_rgba(234,179,8,0.3)] px-6"
+              >
+                {isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <>
+                    <Sparkles className="h-3.5 w-3.5 mr-2" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider">Generate</span>
+                  </>
                 )}
-              </AnimatePresence>
-            </div>
-          </form>
-        </Form>
-      </motion.div>
+              </Button>
+          </div>
+        </form>
+      </Form>
     </motion.div>
   );
 }

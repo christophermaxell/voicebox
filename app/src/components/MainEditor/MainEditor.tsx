@@ -77,58 +77,49 @@ export function MainEditor() {
   };
 
   return (
-    <div className="flex gap-10 h-full min-h-0 overflow-hidden relative p-8 pl-28">
-      {/* Background Subtle Gradient Glow */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 blur-[150px] -z-10 opacity-30 pointer-events-none" />
-      
+    <div className="flex gap-1 h-full min-h-0 overflow-hidden relative">
       {/* Left Column - Voice Section */}
-      <div className="flex-[1.2] flex flex-col min-h-0 overflow-hidden relative">
-        <header className="flex items-center justify-between mb-8">
-           <div className="space-y-1">
-              <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
-                 Studio
-                 <div className="text-[10px] font-bold bg-primary/20 text-primary border border-primary/20 px-2 py-0.5 rounded-md uppercase tracking-wider">PRO</div>
-              </h1>
-              <p className="text-sm text-muted-foreground">Select a voice and start generating.</p>
-           </div>
-           
-           <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleImportClick} className="rounded-xl">
-                <Upload className="mr-2 h-3.5 w-3.5" />
-                Import
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".voicebox.zip"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <Button onClick={() => setDialogOpen(true)} size="sm" variant="premium" className="rounded-xl">
-                <Sparkles className="mr-2 h-3.5 w-3.5" />
-                New Voice
-              </Button>
-            </div>
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative p-6">
+        <header className="flex items-center justify-between mb-8 px-2">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Voicebox</h1>
+            
+            <div className="flex gap-2">
+               <Button variant="outline" size="xs" onClick={handleImportClick} className="rounded-lg h-8 border-white/5 bg-white/5 hover:bg-white/10 text-[11px] font-bold uppercase tracking-wider">
+                 Import Voice
+               </Button>
+               <input
+                 ref={fileInputRef}
+                 type="file"
+                 accept=".voicebox.zip"
+                 onChange={handleFileChange}
+                 className="hidden"
+               />
+               <Button onClick={() => setDialogOpen(true)} size="xs" variant="premium" className="rounded-lg h-8 shadow-[0_0_15px_rgba(234,179,8,0.2)] text-[11px] font-bold uppercase tracking-wider">
+                 Create Voice
+               </Button>
+             </div>
         </header>
 
         <div
           ref={scrollRef}
           className={cn(
-            'flex-1 min-h-0 overflow-y-auto pb-4 custom-scrollbar pr-4',
+            'flex-1 min-h-0 overflow-y-auto pb-4 custom-scrollbar px-2',
             isPlayerVisible && BOTTOM_SAFE_AREA_PADDING,
           )}
         >
           <ProfileList />
         </div>
+
+        {/* Generate Box at bottom of left column */}
+        <div className="mt-4 px-2">
+           <FloatingGenerateBox isPlayerOpen={!!audioUrl} />
+        </div>
       </div>
 
-      {/* Right Column - History Section (Slightly narrower, more like a panel) */}
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#0f1011] border border-[#23252a] rounded-3xl p-6 shadow-highlight">
+      {/* Right Column - History Section (Chat style) */}
+      <div className="w-[420px] shrink-0 flex flex-col min-h-0 overflow-hidden bg-[#050505] border-l border-white/5 shadow-2xl">
         <HistoryTable />
       </div>
-
-      {/* Floating Generate Box */}
-      <FloatingGenerateBox isPlayerOpen={!!audioUrl} />
 
       {/* Import Dialog */}
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>

@@ -7,7 +7,8 @@ import {
   Play,
   Trash2,
   Clock,
-  ChevronRight,
+  History,
+  MessageSquare,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -132,19 +133,6 @@ export function HistoryTable() {
     });
   };
 
-  const handleExportPackage = (generationId: string, text: string) => {
-    exportGeneration.mutate({ generationId, text }, {
-      onError: (error) => {
-        toast({ title: 'Failed to export generation', description: error.message, variant: 'destructive' });
-      },
-    });
-  };
-
-  const handleDeleteClick = (generationId: string, profileName: string) => {
-    setGenerationToDelete({ id: generationId, name: profileName });
-    setDeleteDialogOpen(true);
-  };
-
   const handleDeleteConfirm = () => {
     if (generationToDelete) {
       deleteGeneration.mutate(generationToDelete.id);
@@ -162,27 +150,27 @@ export function HistoryTable() {
   }
 
   return (
-    <div className="flex flex-col h-full min-h-0 relative">
-      <div className="flex items-center justify-between mb-4 mt-1 px-1">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-           <Clock className="h-3.5 w-3.5" />
-           History
-        </h2>
-        <div className="text-[10px] text-muted-foreground bg-white/5 border border-white/5 rounded-full px-2 py-0.5">
-           {total} GENERATIONS
+    <div className="flex flex-col h-full min-h-0 relative p-6">
+      <header className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+           <History className="h-3.5 w-3.5" />
+           Project History
         </div>
-      </div>
+        <div className="text-[10px] text-primary/60 font-bold bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+           {total} Items
+        </div>
+      </header>
 
       {allHistory.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center p-8 border border-dashed border-border rounded-xl bg-white/5 text-muted-foreground text-sm gap-3">
-          <AudioWaveform className="h-8 w-8 opacity-20" />
-          No history yet. Start generating speech!
+        <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground/30 text-xs gap-4 border border-dashed border-white/5 rounded-2xl">
+          <MessageSquare className="h-10 w-10 opacity-10" />
+          No activity recorded yet.
         </div>
       ) : (
         <div
           ref={scrollRef}
           className={cn(
-            'flex-1 min-h-0 overflow-y-auto space-y-2 pb-8 px-0.5',
+            'flex-1 min-h-0 overflow-y-auto space-y-4 pb-8 pr-2 custom-scrollbar',
             isPlayerVisible && BOTTOM_SAFE_AREA_PADDING,
           )}
         >
@@ -193,72 +181,64 @@ export function HistoryTable() {
                 <motion.div
                   key={gen.id}
                   layout
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  whileHover={{ scale: 1.01 }}
                   className={cn(
-                    'group flex items-start gap-3 p-3 bg-[#191a1b] border border-[#23252a] rounded-xl hover:bg-[#28282c] transition-all cursor-pointer',
-                    isCurrentlyPlaying && 'border-primary/50 shadow-[0_0_15px_rgba(94,106,210,0.1)]'
+                    'group flex flex-col gap-3 p-4 bg-[#0a0a0a]/60 border border-white/5 rounded-2xl hover:bg-white/5 transition-all cursor-pointer relative',
+                    isCurrentlyPlaying && 'border-primary/40 bg-primary/5 shadow-premium'
                   )}
                   onClick={() => handlePlay(gen.id, gen.text, gen.profile_id)}
                 >
-                  <div className={cn(
-                    "w-10 h-10 rounded-lg flex items-center justify-center transition-colors shrink-0",
-                    isCurrentlyPlaying ? "bg-primary text-white" : "bg-[#0f1011] text-muted-foreground group-hover:text-primary"
-                  )}>
-                    {isCurrentlyPlaying ? <Play className="h-4 w-4 fill-current" /> : <AudioWaveform className="h-4 w-4" />}
-                  </div>
+                   {/* Play Indicator overlay */}
+                   {isCurrentlyPlaying && (
+                     <div className="absolute top-2 right-2">
+                        <div className="flex gap-0.5 items-end h-3">
+                           <div className="w-1 bg-primary rounded-full animate-bounce h-full" style={{ animationDelay: '0s' }} />
+                           <div className="w-1 bg-primary rounded-full animate-bounce h-2/3" style={{ animationDelay: '0.1s' }} />
+                           <div className="w-1 bg-primary rounded-full animate-bounce h-full" style={{ animationDelay: '0.2s' }} />
+                        </div>
+                     </div>
+                   )}
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                       <span className="text-[13px] font-medium text-foreground">{gen.profile_name}</span>
-                       <span className="text-[10px] text-muted-foreground">{formatDate(gen.created_at)}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground line-clamp-1 leading-relaxed pr-2 italic">
-                      "{gen.text}"
-                    </p>
-                    <div className="flex items-center gap-3 mt-2">
-                       <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                          <Clock className="h-2.5 w-2.5" />
-                          {formatDuration(gen.duration)}
-                       </div>
-                       <div className="text-[10px] uppercase font-bold text-primary/60 tracking-tighter">
-                          {gen.language}
-                       </div>
-                    </div>
-                  </div>
+                   <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
+                        isCurrentlyPlaying ? "bg-primary text-primary-foreground shadow-glow" : "bg-white/5 text-muted-foreground group-hover:text-primary"
+                      )}>
+                        {isCurrentlyPlaying ? <Play className="h-4 w-4 fill-current" /> : <AudioWaveform className="h-4 w-4" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                         <div className="text-xs font-bold text-foreground truncate">{gen.profile_name}</div>
+                         <div className="text-[10px] text-muted-foreground/60 uppercase tracking-tighter">{formatDate(gen.created_at)}</div>
+                      </div>
+                   </div>
+                   
+                   <p className={cn(
+                     "text-[13px] leading-relaxed transition-colors pr-4",
+                     isCurrentlyPlaying ? "text-foreground font-medium" : "text-muted-foreground group-hover:text-foreground"
+                   )}>
+                     {gen.text}
+                   </p>
 
-                  <div className="shrink-0 pt-1">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
+                   <div className="flex items-center justify-between mt-1">
+                      <div className="flex items-center gap-4">
+                         <div className="text-[10px] font-bold text-muted-foreground/30 flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {formatDuration(gen.duration)}
+                         </div>
+                         <div className="text-[10px] font-bold text-primary/40 uppercase tracking-widest">{gen.language}</div>
+                      </div>
+                      
+                      <div className="opacity-0 group-hover:opacity-100 flex gap-1 h-6">
+                        <Button size="icon" variant="ghost" className="h-6 w-6 rounded-md hover:bg-white/10" onClick={(e) => { e.stopPropagation(); handleDownloadAudio(gen.id, gen.text); }}>
+                           <Download className="h-3 w-3" />
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-[#191a1b] border-[#23252a]">
-                        <DropdownMenuItem onClick={() => handlePlay(gen.id, gen.text, gen.profile_id)}>
-                          <Play className="mr-2 h-4 w-4" /> Play
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDownloadAudio(gen.id, gen.text)}>
-                          <Download className="mr-2 h-4 w-4" /> Export Audio
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleExportPackage(gen.id, gen.text)}>
-                          <FileArchive className="mr-2 h-4 w-4" /> Export Package
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDeleteClick(gen.id, gen.profile_name)}
-                          className="text-destructive focus:text-white focus:bg-destructive"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                        <Button size="icon" variant="ghost" className="h-6 w-6 rounded-md hover:bg-destructive/20 hover:text-destructive" onClick={(e) => { e.stopPropagation(); setGenerationToDelete({ id: gen.id, name: gen.profile_name }); setDeleteDialogOpen(true); }}>
+                           <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                   </div>
                 </motion.div>
               );
             })}
@@ -273,18 +253,16 @@ export function HistoryTable() {
       )}
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="bg-[#191a1b] border-[#23252a]">
+        <DialogContent className="bg-[#111111] border-white/10">
           <DialogHeader>
             <DialogTitle>Delete Generation</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Remove this generation from "{generationToDelete?.name}"?
+            <DialogDescription>
+              This recorded synthesis will be permanently removed.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2">
+          <DialogFooter className="gap-2 pt-4">
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDeleteConfirm} disabled={deleteGeneration.isPending}>
-              {deleteGeneration.isPending ? 'Deleting...' : 'Delete Forever'}
-            </Button>
+            <Button variant="destructive" onClick={handleDeleteConfirm}>Delete Activity</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
