@@ -13,7 +13,7 @@ import { ProfileForm } from '@/components/VoiceProfiles/ProfileForm';
 import { apiClient } from '@/lib/api/client';
 import type { VoiceProfileResponse } from '@/lib/api/types';
 import { BOTTOM_SAFE_AREA_PADDING } from '@/lib/constants/ui';
-import { useHistory } from '@/lib/hooks/useHistory';
+import { useHistoryStats } from '@/lib/hooks/useHistory';
 import { useDeleteProfile, useProfileSamples, useProfiles } from '@/lib/hooks/useProfiles';
 import { cn } from '@/lib/utils/cn';
 import { usePlayerStore } from '@/stores/playerStore';
@@ -22,7 +22,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export function VoicesTab() {
   const { data: profiles, isLoading } = useProfiles();
-  const { data: historyData } = useHistory({ limit: 1000 });
+  const { data: statsData } = useHistoryStats();
   const queryClient = useQueryClient();
   const setDialogOpen = useUIStore((state) => state.setProfileDialogOpen);
   const setEditingProfileId = useUIStore((state) => state.setEditingProfileId);
@@ -32,14 +32,8 @@ export function VoicesTab() {
   const isPlayerVisible = !!audioUrl;
 
   const generationCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    if (historyData?.items) {
-      historyData.items.forEach((item) => {
-        counts[item.profile_id] = (counts[item.profile_id] || 0) + 1;
-      });
-    }
-    return counts;
-  }, [historyData]);
+    return statsData?.generations_by_profile || {};
+  }, [statsData]);
 
   const { data: channelAssignments } = useQuery({
     queryKey: ['profile-channels'],

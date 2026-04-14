@@ -276,6 +276,14 @@ class ApiClient {
     return `${this.getBaseUrl()}/audio/${audioId}`;
   }
 
+  async getHistoryStats(): Promise<{
+    total_generations: number;
+    total_duration_seconds: number;
+    generations_by_profile: Record<string, number>;
+  }> {
+    return this.request('/history/stats');
+  }
+
   getSampleUrl(sampleId: string): string {
     return `${this.getBaseUrl()}/samples/${sampleId}`;
   }

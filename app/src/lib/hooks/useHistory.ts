@@ -10,6 +10,13 @@ export function useHistory(query?: HistoryQuery) {
   });
 }
 
+export function useHistoryStats() {
+  return useQuery({
+    queryKey: ['history', 'stats'],
+    queryFn: () => apiClient.getHistoryStats(),
+  });
+}
+
 export function useGenerationDetail(generationId: string) {
   return useQuery({
     queryKey: ['history', generationId],
