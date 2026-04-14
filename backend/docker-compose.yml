@@ -1,0 +1,16 @@
+version: '3'
+services:
+  voicebox-backend:
+    build: .
+    container_name: voicebox-backend
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - voicebox-data:/data
+      - ~/.cache/huggingface:/root/.cache/huggingface
+    environment:
+      - VOICEBOX_DATA_DIR=/data
+    restart: always
+
+volumes:
+  voicebox-data:
