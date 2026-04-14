@@ -1,4 +1,5 @@
 import { createRootRoute, createRoute, createRouter, Outlet } from '@tanstack/react-router';
+import { FileText } from 'lucide-react';
 import { AppFrame } from '@/components/AppFrame/AppFrame';
 import { AudioTab } from '@/components/AudioTab/AudioTab';
 import { MainEditor } from '@/components/MainEditor/MainEditor';
@@ -114,6 +115,14 @@ const serverRoute = createRoute({
   component: ServerTab,
 });
 
+import { TranscriptionTab } from '@/components/TranscriptionTab';
+
+const transcribeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/transcribe',
+  component: TranscriptionTab,
+});
+
 // Route tree
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -122,6 +131,7 @@ const routeTree = rootRoute.addChildren([
   audioRoute,
   modelsRoute,
   serverRoute,
+  transcribeRoute,
 ]);
 
 // Create router

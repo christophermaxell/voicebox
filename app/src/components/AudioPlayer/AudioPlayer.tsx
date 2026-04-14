@@ -9,6 +9,7 @@ import { formatAudioDuration } from '@/lib/utils/audio';
 import { debug } from '@/lib/utils/debug';
 import { usePlayerStore } from '@/stores/playerStore';
 import { usePlatform } from '@/platform/PlatformContext';
+import { cn } from '@/lib/utils/cn';
 
 export function AudioPlayer() {
   const platform = usePlatform();
@@ -840,6 +841,7 @@ export function AudioPlayer() {
             <div className="text-sm font-semibold truncate text-foreground/90">
               {title || 'Current Track'}
             </div>
+            {error && <div className="text-[10px] text-destructive truncate">{error}</div>}
             <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground/60">
               <span>{formatAudioDuration(currentTime)}</span>
               <span className="opacity-30">/</span>
@@ -848,11 +850,15 @@ export function AudioPlayer() {
           </div>
 
           {/* Waveform Visualization - Full area */}
-          <div className="flex-1 min-w-0 h-10 flex items-center group/wave relative">
-            <div ref={waveformRef} className="w-full h-full opacity-60 group-hover/wave:opacity-100 transition-opacity" />
-            <div className="absolute inset-0 cursor-pointer" onClick={(e) => {
-               // Handle click to seek if needed, but WaveSurfer usually handles this
-            }} />
+          <div className="flex-1 min-w-0 h-10 flex flex-col justify-center group/wave relative">
+            <div ref={waveformRef} className="w-full h-8 opacity-40 group-hover/wave:opacity-100 transition-opacity" />
+            <Slider
+                value={duration > 0 ? [(currentTime / duration) * 100] : [0]}
+                onValueChange={handleSeek}
+                max={100}
+                step={0.1}
+                className="w-full absolute inset-x-0 bottom-0 opacity-0 group-hover/wave:opacity-100 transition-opacity"
+              />
           </div>
 
           {/* Controls Group */}

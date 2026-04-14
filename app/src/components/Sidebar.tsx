@@ -1,5 +1,5 @@
 import { Link, useMatchRoute } from '@tanstack/react-router';
-import { Box, BookOpen, Loader2, Mic, Server, Speaker, Volume2, Settings2 } from 'lucide-react';
+import { Box, BookOpen, Loader2, Mic, Server, Speaker, Volume2, FileText } from 'lucide-react';
 import voiceboxLogo from '@/assets/voicebox-logo.png';
 import { cn } from '@/lib/utils/cn';
 import { useGenerationStore } from '@/stores/generationStore';
@@ -15,6 +15,7 @@ const tabs = [
   { id: 'stories', path: '/stories', icon: BookOpen, label: 'Stories' },
   { id: 'voices', path: '/voices', icon: Mic, label: 'Voices' },
   { id: 'audio', path: '/audio', icon: Speaker, label: 'Audio' },
+  { id: 'transcribe', path: '/transcribe', icon: FileText, label: 'Transcription' },
   { id: 'models', path: '/models', icon: Box, label: 'Models' },
 ];
 
