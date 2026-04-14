@@ -65,64 +65,70 @@ export function ProfileCard({ profile }: ProfileCardProps) {
     <>
       <motion.div
         layout
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        whileHover={{ scale: 1.02 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         className={cn(
-          'relative p-4 rounded-2xl transition-all duration-300 cursor-pointer group',
-          'bg-[#111111] border border-white/5 hover:border-primary/40',
-          isSelected && 'ring-2 ring-primary/60 border-primary/40'
+          'relative p-4 rounded-xl transition-all duration-300 cursor-pointer group flex flex-col',
+          'bg-[#191a1b] border border-white/[0.04] hover:bg-[#1e1e20] hover:border-white/[0.08]',
+          isSelected && 'ring-2 ring-primary bg-[#1e1e20] border-transparent'
         )}
         onClick={handleSelect}
       >
-        <div className="flex gap-4 h-full relative z-10">
-          {/* Avatar Container */}
-          <div className="h-16 w-16 rounded-2xl bg-[#0a0a0a] border border-white/5 p-1 flex items-center justify-center shrink-0 overflow-hidden group-hover:border-primary/50 transition-colors">
+        <div className="flex gap-4 items-start mb-4">
+           {/* Avatar on left */}
+           <div className="h-10 w-10 rounded-lg bg-[#0a0a0a] border border-white/5 p-0.5 flex items-center justify-center shrink-0 overflow-hidden group-hover:border-primary/50 transition-colors">
             {avatarUrl && !avatarError ? (
               <img
                 src={avatarUrl}
                 alt={profile.name}
                 className={cn(
-                  'h-full w-full object-cover rounded-xl transition-all duration-500',
+                  'h-full w-full object-cover rounded-md transition-all duration-500',
                   !isSelected && 'grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100'
                 )}
                 onError={() => setAvatarError(true)}
               />
             ) : (
-              <Mic className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+              <Mic className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
             )}
           </div>
 
-          <div className="flex-1 min-w-0 flex flex-col justify-center">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-bold text-base text-foreground truncate">{profile.name}</span>
-            </div>
-            
-            <div className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest mb-2">
-               <div className="flex items-center gap-1">
-                  <Globe2 className="h-2.5 w-2.5" />
-                  {profile.language}
-               </div>
-               <div className="flex items-center gap-1">
-                  <Activity className="h-2.5 w-2.5" />
-                  IDLE
-               </div>
-            </div>
-
-            <p className="text-xs text-muted-foreground line-clamp-1 opacity-40 group-hover:opacity-100 transition-opacity">
-              {profile.description || 'Voicebox Synthesis Studio'}
-            </p>
+          <div className="flex-1 min-w-0">
+             <div className="text-[15px] font-bold text-foreground leading-none mb-1 truncate">{profile.name}</div>
+             <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed h-[32px] opacity-40 group-hover:opacity-100 transition-opacity">
+               {profile.description || 'No description provided for this AI voice.'}
+             </p>
           </div>
+        </div>
 
-          {/* Quick Actions overlay on hover */}
-          <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg hover:bg-white/10" onClick={handleEdit}>
-                <Edit className="h-3 w-3" />
-              </Button>
-              <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg hover:bg-destructive/20 hover:text-destructive" onClick={handleDeleteClick}>
-                <Trash2 className="h-3 w-3" />
-              </Button>
-          </div>
+        {/* Bottom Metadata & Actions (The Original Design) */}
+        <div className="mt-auto pt-4 flex items-center justify-between border-t border-white/[0.02]">
+           <div className="px-2 py-0.5 rounded-lg bg-white/5 border border-white/5 text-[10px] font-bold text-muted-foreground/60 tracking-widest uppercase">
+              {profile.language}
+           </div>
+
+           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button 
+                className="p-1 px-1.5 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors"
+                onClick={handleExport}
+                title="Download Model"
+              >
+                <Download className="h-3.5 w-3.5" />
+              </button>
+              <button 
+                className="p-1 px-1.5 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors"
+                onClick={handleEdit}
+                title="Edit Voice"
+              >
+                <Edit className="h-3.5 w-3.5" />
+              </button>
+              <button 
+                className="p-1 px-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                onClick={handleDeleteClick}
+                title="Delete Voice"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+           </div>
         </div>
       </motion.div>
 
@@ -136,7 +142,7 @@ export function ProfileCard({ profile }: ProfileCardProps) {
           </DialogHeader>
           <DialogFooter className="gap-2 pt-4">
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDeleteConfirm}>Delete Forever</Button>
+            <Button variant="destructive" onClick={handleDeleteConfirm}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

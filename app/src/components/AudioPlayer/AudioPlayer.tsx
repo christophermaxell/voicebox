@@ -13,6 +13,7 @@ import {
   Repeat,
   Volume1,
   Mic2,
+  X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import WaveSurfer from 'wavesurfer.js';
@@ -52,7 +53,7 @@ export function AudioPlayer() {
 
     const ws = WaveSurfer.create({
       container: waveformRef.current,
-      waveColor: '#eab30840',
+      waveColor: '#eab30820',
       progressColor: '#eab308',
       cursorColor: '#eab308',
       cursorWidth: 2,
@@ -133,14 +134,6 @@ export function AudioPlayer() {
     setIsPlaying(!isPlaying);
   };
 
-  const handleSeek = (value: number[]) => {
-    if (wavesurferRef.current) {
-      const time = (value[0] / 100) * duration;
-      wavesurferRef.current.setTime(time);
-      setCurrentTime(time);
-    }
-  };
-
   const handleVolumeChange = (value: number[]) => {
     setVolume(value[0] / 100);
     if (isMuted && value[0] > 0) setIsMuted(false);
@@ -149,63 +142,51 @@ export function AudioPlayer() {
   if (!audioUrl) return null;
 
   return (
-    <div className="w-full bg-[#050505] border-t border-white/5 h-24 flex items-center px-4 relative z-50">
-      <div className="flex w-full items-center gap-6 max-w-[1800px] mx-auto px-6">
-        
-        {/* Play Button Container */}
-        <div className="flex items-center gap-4">
-           <button 
+    <div className="w-full bg-[#050505]/95 backdrop-blur-md border-t border-white/[0.04] h-20 fixed bottom-0 left-0 right-0 z-[200] px-8 flex items-center justify-between">
+       {/* 1. Play Button (FAR LEFT as per screenshot) */}
+       <div className="shrink-0 mr-10">
+          <button 
              onClick={handlePlayPause}
-             className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground hover:scale-105 transition-all shadow-[0_0_20px_rgba(234,179,8,0.4)]"
+             className="text-foreground hover:scale-110 active:scale-95 transition-all p-2"
            >
-             {isPlaying ? <Pause className="h-6 w-6 fill-current" /> : <Play className="h-6 w-6 fill-current ml-1" />}
+             {isPlaying ? <Pause className="h-8 w-8 fill-current" /> : <Play className="h-8 w-8 fill-current" />}
            </button>
-        </div>
+       </div>
 
-        {/* Waveform Visualization - Main Focus */}
-        <div className="flex-1 flex flex-col gap-1 min-w-0">
-           <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-4">
-                 <span className="font-bold text-sm tracking-tight">{title || 'Studio Synthesis'}</span>
-                 <div className="text-[10px] font-bold text-muted-foreground/40 font-mono">
-                   {formatDuration(currentTime)} / {formatDuration(duration)}
-                 </div>
-              </div>
-              {error && <div className="text-[10px] text-destructive font-bold uppercase tracking-widest">{error}</div>}
-           </div>
-           <div ref={waveformRef} className="w-full h-12 opacity-80 group-hover:opacity-100 transition-opacity" />
-        </div>
+       {/* 2. Waveform visualization (THE ENTIRE MIDDLE-LEFT) */}
+       <div className="flex-1 h-12 flex flex-col justify-center relative">
+          <div ref={waveformRef} className="w-full opacity-60" />
+       </div>
 
-        {/* Controls Panel */}
-        <div className="flex items-center gap-6 shrink-0 ml-10">
-          <div className="flex items-center gap-2 w-28 group">
-            <button onClick={() => setIsMuted(!isMuted)} className="text-muted-foreground hover:text-primary transition-colors">
-               {isMuted || volume === 0 ? <Volume1 className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-            </button>
-            <Slider
-              value={[isMuted ? 0 : volume * 100]}
-              onValueChange={handleVolumeChange}
-              max={100}
-              className="w-full"
-            />
+       {/* 3. Status, Controls & Options (FAR RIGHT) */}
+       <div className="shrink-0 ml-12 flex items-center gap-10">
+          {/* Time & Title */}
+          <div className="flex flex-col gap-0.5 min-w-[300px] pointer-events-none">
+             <div className="flex items-center gap-4 text-[13px] font-bold tracking-tight">
+                <span className="text-muted-foreground">{formatDuration(currentTime)} / {formatDuration(duration)}</span>
+                <span className="text-foreground truncate opacity-80">{title}</span>
+             </div>
           </div>
 
-          <div className="flex items-center gap-2 border-l border-white/5 pl-6">
-             <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:bg-white/5">
+          {/* Player controls */}
+          <div className="flex items-center gap-4 border-l border-white/[0.05] pl-10">
+             <button className="text-muted-foreground hover:text-foreground transition-colors p-2">
                 <Repeat className="h-4 w-4" />
-             </Button>
-             <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:bg-white/5">
-                <Share2 className="h-4 w-4" />
-             </Button>
-             <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:bg-white/5">
-                <Download className="h-4 w-4" />
-             </Button>
-             <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:bg-white/5" onClick={stop}>
-                <MoreHorizontal className="h-4 w-4" />
-             </Button>
+             </button>
+             <div className="flex items-center gap-3 w-32 group">
+                <Volume2 className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                <Slider
+                  value={[isMuted ? 0 : volume * 100]}
+                  onValueChange={handleVolumeChange}
+                  max={100}
+                  className="w-full"
+                />
+             </div>
+             <button onClick={stop} className="text-muted-foreground hover:text-foreground transition-colors p-2">
+                <X className="h-4 w-4" />
+             </button>
           </div>
-        </div>
-      </div>
+       </div>
     </div>
   );
 }
