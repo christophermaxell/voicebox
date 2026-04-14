@@ -6,63 +6,63 @@
 
 @theme {
   --radius-sm: 2px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
 
-  /* Linear Premium Palette */
-  --color-background: #08090a;
-  --color-foreground: #f7f8f8;
+  /* Voicebox.sh Premium Palette */
+  --color-background: #0a0a0a;
+  --color-foreground: #fcfcfc;
 
-  --color-card: #0f1011;
-  --color-card-foreground: #f7f8f8;
+  --color-card: #141414;
+  --color-card-foreground: #fcfcfc;
 
-  --color-popover: #191a1b;
-  --color-popover-foreground: #f7f8f8;
+  --color-popover: #1a1a1a;
+  --color-popover-foreground: #fcfcfc;
 
-  --color-primary: #5e6ad2;
-  --color-primary-foreground: #ffffff;
+  --color-primary: #eab308;
+  --color-primary-foreground: #000000;
 
-  --color-secondary: #28282c;
-  --color-secondary-foreground: #d0d6e0;
+  --color-secondary: #1f1f1f;
+  --color-secondary-foreground: #a1a1aa;
 
-  --color-muted: #191a1b;
-  --color-muted-foreground: #8a8f98;
+  --color-muted: #1a1a1a;
+  --color-muted-foreground: #71717a;
 
-  --color-accent: #7170ff;
-  --color-accent-foreground: #ffffff;
+  --color-accent: #facc15;
+  --color-accent-foreground: #000000;
 
-  --color-destructive: #ff4d4f;
+  --color-destructive: #ef4444;
   --color-destructive-foreground: #ffffff;
 
-  --color-border: #23252a;
-  --color-input: #0f1011;
-  --color-ring: #5e6ad2;
+  --color-border: #262626;
+  --color-input: #0a0a0a;
+  --color-ring: #eab308;
   
-  --color-sidebar: #0f1011;
+  --color-sidebar: #050505;
 }
 
 @layer base {
   :root {
-    --background: 240 10% 3.9%;
+    --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
-    --card: 240 10% 6%;
+    --card: 0 0% 6%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 10% 10%;
+    --popover: 0 0% 9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 243 54% 60%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 240 4% 16%;
+    --primary: 45 93% 47%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 240 4% 10%;
+    --muted: 240 3.7% 10%;
     --muted-foreground: 240 5% 64.9%;
-    --accent: 243 100% 72%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 100% 65%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 240 5% 16%;
-    --input: 240 5% 6%;
-    --ring: 243 54% 60%;
-    --radius: 0.5rem;
+    --accent: 45 93% 47%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 45 93% 47%;
+    --radius: 0.75rem;
   }
 
   * {
@@ -102,7 +102,7 @@
   }
 
   .nav-item.active {
-    @apply text-foreground bg-primary/20 border border-primary/30 shadow-[0_0_15px_rgba(94,106,210,0.2)];
+    @apply text-foreground bg-primary/10 border border-primary/20 shadow-[0_0_20px_rgba(234,179,8,0.1)];
   }
 }
 
@@ -114,9 +114,9 @@
 
 @keyframes glow {
   from {
-    box-shadow: 0 0 5px rgba(94, 106, 210, 0.2);
+    box-shadow: 0 0 5px rgba(234, 179, 8, 0.2);
   }
   to {
-    box-shadow: 0 0 20px rgba(94, 106, 210, 0.5);
+    box-shadow: 0 0 20px rgba(234, 179, 8, 0.5);
   }
 }
