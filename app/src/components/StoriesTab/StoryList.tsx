@@ -33,6 +33,7 @@ import { useStories, useCreateStory, useUpdateStory, useDeleteStory } from '@/li
 import { cn } from '@/lib/utils/cn';
 import { formatDate } from '@/lib/utils/format';
 import { useStoryStore } from '@/stores/storyStore';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export function StoryList() {
   const { data: stories, isLoading } = useStories();
@@ -55,315 +56,125 @@ export function StoryList() {
   const { toast } = useToast();
 
   const handleCreateStory = () => {
-    if (!newStoryName.trim()) {
-      toast({
-        title: 'Name required',
-        description: 'Please enter a story name',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    createStory.mutate(
-      {
-        name: newStoryName.trim(),
-        description: newStoryDescription.trim() || undefined,
-      },
-      {
-        onSuccess: (story) => {
-          setSelectedStoryId(story.id);
-          setCreateDialogOpen(false);
-          setNewStoryName('');
-          setNewStoryDescription('');
-          toast({
-            title: 'Story created',
-            description: `"${story.name}" has been created`,
-          });
-        },
-        onError: (error) => {
-          toast({
-            title: 'Failed to create story',
-            description: error.message,
-            variant: 'destructive',
-          });
-        },
-      },
-    );
-  };
-
-  const handleEditClick = (story: { id: string; name: string; description?: string }) => {
-    setEditingStory(story);
-    setNewStoryName(story.name);
-    setNewStoryDescription(story.description || '');
-    setEditDialogOpen(true);
+    if (!newStoryName.trim()) return;
+    createStory.mutate({ name: newStoryName.trim(), description: newStoryDescription.trim() || undefined }, {
+      onSuccess: (story) => {
+        setSelectedStoryId(story.id);
+        setCreateDialogOpen(false);
+        setNewStoryName('');
+        setNewStoryDescription('');
+      }
+    });
   };
 
   const handleUpdateStory = () => {
-    if (!editingStory || !newStoryName.trim()) {
-      toast({
-        title: 'Name required',
-        description: 'Please enter a story name',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    updateStory.mutate(
-      {
-        storyId: editingStory.id,
-        data: {
-          name: newStoryName.trim(),
-          description: newStoryDescription.trim() || undefined,
-        },
-      },
-      {
-        onSuccess: () => {
-          setEditDialogOpen(false);
-          setEditingStory(null);
-          setNewStoryName('');
-          setNewStoryDescription('');
-        },
-        onError: (error) => {
-          toast({
-            title: 'Failed to update story',
-            description: error.message,
-            variant: 'destructive',
-          });
-        },
-      },
-    );
-  };
-
-  const handleDeleteClick = (storyId: string) => {
-    setDeletingStoryId(storyId);
-    setDeleteDialogOpen(true);
+    if (!editingStory || !newStoryName.trim()) return;
+    updateStory.mutate({ storyId: editingStory.id, data: { name: newStoryName.trim(), description: newStoryDescription.trim() || undefined } }, {
+      onSuccess: () => {
+        setEditDialogOpen(false);
+        setEditingStory(null);
+      }
+    });
   };
 
   const handleDeleteConfirm = () => {
     if (!deletingStoryId) return;
-
     deleteStory.mutate(deletingStoryId, {
       onSuccess: () => {
-        // Clear selection if deleting the currently selected story
-        if (selectedStoryId === deletingStoryId) {
-          setSelectedStoryId(null);
-        }
+        if (selectedStoryId === deletingStoryId) setSelectedStoryId(null);
         setDeleteDialogOpen(false);
-        setDeletingStoryId(null);
-      },
-      onError: (error) => {
-        toast({
-          title: 'Failed to delete story',
-          description: error.message,
-          variant: 'destructive',
-        });
-      },
+      }
     });
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground">Loading stories...</div>
-      </div>
-    );
-  }
-
-  const storyList = stories || [];
+  if (isLoading) return <div className="p-8 text-muted-foreground animate-pulse font-bold uppercase tracking-widest text-[10px]">Loading Workspace...</div>;
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col h-full min-h-0 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 px-1">
-        <h2 className="text-2xl font-bold">Stories</h2>
-        <Button onClick={() => setCreateDialogOpen(true)} size="sm">
+      <div className="flex items-center justify-between mb-8 px-2">
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">Stories</h2>
+        <Button 
+          onClick={() => setCreateDialogOpen(true)} 
+          size="sm" 
+          variant="premium" 
+          className="rounded-full px-4 h-8 shadow-[0_0_15px_rgba(234,179,8,0.2)]"
+        >
           <Plus className="mr-2 h-4 w-4" />
-          New Story
+          <span className="text-[11px] font-bold uppercase tracking-wider">New Story</span>
         </Button>
       </div>
 
-      {/* Story List */}
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
-        {storyList.length === 0 ? (
-          <div className="text-center py-12 px-5 border-2 border-dashed border-muted rounded-2xl text-muted-foreground">
-            <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-sm">No stories yet</p>
-            <p className="text-xs mt-2">Create your first story to get started</p>
-          </div>
-        ) : (
-          storyList.map((story) => (
-            <div
+      {/* Story List Grid */}
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-3 custom-scrollbar pr-2">
+        <AnimatePresence mode="popLayout">
+          {stories?.map((story) => (
+            <motion.div
               key={story.id}
+              layout
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
               className={cn(
-                'h-24 p-4 border rounded-2xl transition-colors group flex items-center',
-                selectedStoryId === story.id && 'bg-muted border-primary',
+                'group relative p-4 rounded-2xl transition-all duration-300 cursor-pointer border border-white/[0.04] bg-[#111111]',
+                selectedStoryId === story.id ? 'bg-[#1e1e20] border-primary/40' : 'hover:bg-white/[0.04]'
               )}
+              onClick={() => setSelectedStoryId(story.id)}
             >
-              <div className="flex items-start justify-between gap-2 w-full min-w-0">
-                <button
-                  type="button"
-                  className="flex-1 min-w-0 text-left cursor-pointer overflow-hidden"
-                  onClick={() => setSelectedStoryId(story.id)}
-                >
-                  <h3 className="font-medium truncate">{story.name}</h3>
-                  {story.description && (
-                    <p className="text-sm text-muted-foreground mt-1 truncate">
-                      {story.description}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                    <span>
-                      {story.item_count} {story.item_count === 1 ? 'item' : 'items'}
-                    </span>
-                    <span>•</span>
-                    <span>{formatDate(story.updated_at)}</span>
-                  </div>
-                </button>
+              <div className="flex flex-col gap-1 pr-6">
+                 <h3 className="font-bold text-foreground text-[15px] truncate">{story.name}</h3>
+                 <p className="text-[12px] text-muted-foreground/60 line-clamp-2 leading-relaxed opacity-60 group-hover:opacity-100 transition-opacity">
+                   {story.description || 'Professional multi-voice project.'}
+                 </p>
+                 <div className="flex items-center gap-3 mt-3 text-[10px] font-bold text-primary/40 uppercase tracking-widest">
+                    <span>{story.item_count} {story.item_count === 1 ? 'Item' : 'Items'}</span>
+                    <span className="opacity-30">•</span>
+                    <span className="text-muted-foreground/40 font-normal lowercase italic">{formatDate(story.updated_at)}</span>
+                 </div>
+              </div>
+
+              {/* Actions */}
+              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => e.stopPropagation()}
-                    >
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" onClick={(e) => e.stopPropagation()}>
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleEditClick(story)}>
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Edit
+                  <DropdownMenuContent align="end" className="bg-[#111111] border-white/10">
+                    <DropdownMenuItem onClick={() => { setEditingStory(story); setNewStoryName(story.name); setNewStoryDescription(story.description || ''); setEditDialogOpen(true); }}>
+                      <Pencil className="mr-2 h-3 w-3" /> Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleDeleteClick(story.id)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
+                    <DropdownMenuItem onClick={() => { setDeletingStoryId(story.id); setDeleteDialogOpen(true); }} className="text-destructive">
+                      <Trash2 className="mr-2 h-3 w-3" /> Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-            </div>
-          ))
-        )}
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
 
-      {/* Create Story Dialog */}
+      {/* Dialogs */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Story</DialogTitle>
-            <DialogDescription>
-              Create a new story to organize your voice generations into conversations.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="bg-[#111111] border-white/10">
+          <DialogHeader><DialogTitle>New Workspace</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="story-name">Name</Label>
-              <Input
-                id="story-name"
-                placeholder="My Story"
-                value={newStoryName}
-                onChange={(e) => setNewStoryName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleCreateStory();
-                  }
-                }}
-              />
+              <Label>Project Name</Label>
+              <Input placeholder="Meme Story" value={newStoryName} onChange={(e) => setNewStoryName(e.target.value)} className="bg-[#0a0a0a] border-white/5" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="story-description">Description (optional)</Label>
-              <Textarea
-                id="story-description"
-                placeholder="A conversation between..."
-                value={newStoryDescription}
-                onChange={(e) => setNewStoryDescription(e.target.value)}
-                rows={3}
-              />
+              <Label>Description</Label>
+              <Textarea placeholder="Details about this conversation..." value={newStoryDescription} onChange={(e) => setNewStoryDescription(e.target.value)} className="bg-[#0a0a0a] border-white/5" />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateStory} disabled={createStory.isPending}>
-              {createStory.isPending ? 'Creating...' : 'Create'}
-            </Button>
+            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
+            <Button variant="premium" onClick={handleCreateStory}>Initialize Story</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Edit Story Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Story</DialogTitle>
-            <DialogDescription>Update the story name and description.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-story-name">Name</Label>
-              <Input
-                id="edit-story-name"
-                placeholder="My Story"
-                value={newStoryName}
-                onChange={(e) => setNewStoryName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleUpdateStory();
-                  }
-                }}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-story-description">Description (optional)</Label>
-              <Textarea
-                id="edit-story-description"
-                placeholder="A conversation between..."
-                value={newStoryDescription}
-                onChange={(e) => setNewStoryDescription(e.target.value)}
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleUpdateStory} disabled={updateStory.isPending}>
-              {updateStory.isPending ? 'Saving...' : 'Save'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Story Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the story and all its items. This action cannot be
-              undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button
-                onClick={handleDeleteConfirm}
-                disabled={deleteStory.isPending}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                {deleteStory.isPending ? 'Deleting...' : 'Delete'}
-              </Button>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

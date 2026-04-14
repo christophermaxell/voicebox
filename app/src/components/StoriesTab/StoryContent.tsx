@@ -13,7 +13,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Download, Plus } from 'lucide-react';
+import { Download, Plus, Upload, Sparkles, Send } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,8 @@ import {
 import { useStoryPlayback } from '@/lib/hooks/useStoryPlayback';
 import { useStoryStore } from '@/stores/storyStore';
 import { SortableStoryChatItem } from './StoryChatItem';
+import { FloatingGenerateBox } from '@/components/Generation/FloatingGenerateBox';
+import { cn } from '@/lib/utils/cn';
 
 export function StoryContent() {
   const selectedStoryId = useStoryStore((state) => state.selectedStoryId);
@@ -41,12 +43,10 @@ export function StoryContent() {
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Add generation popover state
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const { data: historyData } = useHistory();
 
-  // Filter generations not in story and matching search
   const availableGenerations = useMemo(() => {
     if (!historyData?.items || !story) return [];
     const storyGenerationIds = new Set(story.items.map((i) => i.generation_id));
@@ -59,50 +59,27 @@ export function StoryContent() {
     );
   }, [historyData, story, searchQuery]);
 
-  // Get track editor height from store for dynamic padding
-  const trackEditorHeight = useStoryStore((state) => state.trackEditorHeight);
-
-  // Track editor is shown when story has items
-  const hasBottomBar = story && story.items.length > 0;
-
-  // Calculate dynamic bottom padding: track editor + gap
-  const bottomPadding = hasBottomBar ? trackEditorHeight + 24 : 0;
-
-  // Drag and drop sensors
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  // Playback state (for auto-scroll and item highlighting)
   const isPlaying = useStoryStore((state) => state.isPlaying);
   const currentTimeMs = useStoryStore((state) => state.currentTimeMs);
   const playbackStoryId = useStoryStore((state) => state.playbackStoryId);
 
-  // Refs for auto-scrolling to playing item
   const itemRefsMap = useRef<Map<string, HTMLDivElement>>(new Map());
   const lastScrolledItemRef = useRef<string | null>(null);
 
-  // Use playback hook
   useStoryPlayback(story?.items);
 
-  // Sort items by start_time_ms
   const sortedItems = useMemo(() => {
     if (!story?.items) return [];
     return [...story.items].sort((a, b) => a.start_time_ms - b.start_time_ms);
   }, [story?.items]);
 
-  // Find the currently playing item based on timecode
   const currentlyPlayingItemId = useMemo(() => {
-    if (!isPlaying || playbackStoryId !== story?.id || !sortedItems.length) {
-      return null;
-    }
+    if (!isPlaying || playbackStoryId !== story?.id || !sortedItems.length) return null;
     const playingItem = sortedItems.find((item) => {
       const itemStart = item.start_time_ms;
       const itemEnd = item.start_time_ms + item.duration * 1000;
@@ -111,12 +88,8 @@ export function StoryContent() {
     return playingItem?.generation_id ?? null;
   }, [isPlaying, playbackStoryId, story?.id, sortedItems, currentTimeMs]);
 
-  // Auto-scroll to the currently playing item
   useEffect(() => {
-    if (!currentlyPlayingItemId || currentlyPlayingItemId === lastScrolledItemRef.current) {
-      return;
-    }
-
+    if (!currentlyPlayingItemId || currentlyPlayingItemId === lastScrolledItemRef.current) return;
     const element = itemRefsMap.current.get(currentlyPlayingItemId);
     if (element && scrollRef.current) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -124,238 +97,86 @@ export function StoryContent() {
     }
   }, [currentlyPlayingItemId]);
 
-  // Reset last scrolled item when playback stops
-  useEffect(() => {
-    if (!isPlaying) {
-      lastScrolledItemRef.current = null;
-    }
-  }, [isPlaying]);
-
   const handleRemoveItem = (itemId: string) => {
     if (!story) return;
-
-    removeItem.mutate(
-      {
-        storyId: story.id,
-        itemId,
-      },
-      {
-        onError: (error) => {
-          toast({
-            title: 'Failed to remove item',
-            description: error.message,
-            variant: 'destructive',
-          });
-        },
-      },
-    );
+    removeItem.mutate({ storyId: story.id, itemId });
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-
     if (!story || !over || active.id === over.id) return;
-
     const oldIndex = sortedItems.findIndex((item) => item.generation_id === active.id);
     const newIndex = sortedItems.findIndex((item) => item.generation_id === over.id);
-
-    if (oldIndex === -1 || newIndex === -1) return;
-
-    // Calculate the new order
     const newOrder = arrayMove(sortedItems, oldIndex, newIndex);
     const generationIds = newOrder.map((item) => item.generation_id);
-
-    // Send reorder request to backend
-    reorderItems.mutate(
-      {
-        storyId: story.id,
-        data: { generation_ids: generationIds },
-      },
-      {
-        onError: (error) => {
-          toast({
-            title: 'Failed to reorder items',
-            description: error.message,
-            variant: 'destructive',
-          });
-        },
-      },
-    );
+    reorderItems.mutate({ storyId: story.id, data: { generation_ids: generationIds } });
   };
 
   const handleExportAudio = () => {
     if (!story) return;
-
-    exportAudio.mutate(
-      {
-        storyId: story.id,
-        storyName: story.name,
-      },
-      {
-        onError: (error) => {
-          toast({
-            title: 'Failed to export audio',
-            description: error.message,
-            variant: 'destructive',
-          });
-        },
-      },
-    );
+    exportAudio.mutate({ storyId: story.id, storyName: story.name });
   };
 
   const handleAddGeneration = (generationId: string) => {
     if (!story) return;
-
-    addStoryItem.mutate(
-      {
-        storyId: story.id,
-        data: { generation_id: generationId },
-      },
-      {
-        onSuccess: () => {
-          setIsAddOpen(false);
-          setSearchQuery('');
-        },
-        onError: (error) => {
-          toast({
-            title: 'Failed to add generation',
-            description: error.message,
-            variant: 'destructive',
-          });
-        },
-      },
-    );
+    addStoryItem.mutate({ storyId: story.id, data: { generation_id: generationId } }, {
+      onSuccess: () => { setIsAddOpen(false); setSearchQuery(''); }
+    });
   };
 
-  if (!selectedStoryId) {
-    return (
-      <div className="flex items-center justify-center h-full text-muted-foreground">
-        <div className="text-center">
-          <p className="text-lg font-medium mb-2">Select a story</p>
-          <p className="text-sm">Choose a story from the list to view its content</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground">Loading story...</div>
-      </div>
-    );
-  }
-
-  if (!story) {
-    return (
-      <div className="flex items-center justify-center h-full text-muted-foreground">
-        <div className="text-center">
-          <p className="text-lg font-medium mb-2">Story not found</p>
-          <p className="text-sm">The selected story could not be loaded</p>
-        </div>
-      </div>
-    );
-  }
+  if (!selectedStoryId) return <div className="flex items-center justify-center h-full text-muted-foreground font-bold uppercase tracking-widest text-[10px] opacity-20">Select a project to begin.</div>;
+  if (isLoading || !story) return <div className="p-8 text-muted-foreground animate-pulse font-bold uppercase tracking-widest text-[10px]">Syncing Content...</div>;
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 px-1">
-        <div>
-          <h2 className="text-2xl font-bold">{story.name}</h2>
-          {story.description && (
-            <p className="text-sm text-muted-foreground mt-1">{story.description}</p>
-          )}
+    <div className="flex flex-col h-full min-h-0 bg-[#0a0a0a]">
+      {/* Header Panel */}
+      <header className="flex items-center justify-between px-8 py-6 border-b border-white/[0.04] bg-[#0d0d0e]/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-3xl font-bold tracking-tight text-foreground">{story.name}</h2>
+          <p className="text-xs text-muted-foreground/60">{story.description || 'Active multi-voice synthesis session.'}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
           <Popover open={isAddOpen} onOpenChange={setIsAddOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Plus className="mr-2 h-4 w-4" />
-                Add
+              <Button variant="outline" size="sm" className="h-8 rounded-lg border-white/5 bg-white/5 hover:bg-white/10 text-[10px] font-bold uppercase tracking-widest transition-all">
+                <Plus className="mr-2 h-3.5 w-3.5" />
+                Add Clip
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80 p-0" align="end">
-              <div className="p-2 border-b">
-                <Input
-                  placeholder="Search by name or transcript..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  autoFocus
-                />
-              </div>
-              <div className="max-h-60 overflow-y-auto">
-                {availableGenerations.length === 0 ? (
-                  <div className="p-4 text-center text-sm text-muted-foreground">
-                    {searchQuery
-                      ? 'No matching generations found'
-                      : 'No available generations'}
-                  </div>
-                ) : (
-                  availableGenerations.map((gen) => (
-                    <button
-                      key={gen.id}
-                      type="button"
-                      className="w-full text-left px-3 py-2 hover:bg-muted transition-colors border-b last:border-b-0"
-                      onClick={() => handleAddGeneration(gen.id)}
-                    >
-                      <div className="font-medium text-sm">{gen.profile_name}</div>
-                      <div className="text-xs text-muted-foreground truncate">
-                        {gen.text.length > 50 ? `${gen.text.substring(0, 50)}...` : gen.text}
-                      </div>
-                    </button>
-                  ))
-                )}
+            <PopoverContent className="w-80 p-2 bg-[#111111] border-white/10" align="end">
+              <Input placeholder="Search generation history..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="bg-black/40 border-white/5 text-sm" />
+              <div className="mt-2 max-h-60 overflow-y-auto space-y-1 custom-scrollbar">
+                {availableGenerations.map((gen) => (
+                  <button key={gen.id} className="w-full text-left p-2 rounded-lg hover:bg-white/5 transition-colors group" onClick={() => handleAddGeneration(gen.id)}>
+                    <div className="font-bold text-xs group-hover:text-primary transition-colors">{gen.profile_name}</div>
+                    <div className="text-[10px] text-muted-foreground truncate opacity-40">{gen.text}</div>
+                  </button>
+                ))}
               </div>
             </PopoverContent>
           </Popover>
-          {story.items.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportAudio}
-              disabled={exportAudio.isPending}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Export Audio
-            </Button>
-          )}
+          <Button variant="outline" size="sm" onClick={handleExportAudio} disabled={exportAudio.isPending || story.items.length === 0} className="h-8 rounded-lg border-white/5 bg-white/5 hover:bg-white/10 text-[10px] font-bold uppercase tracking-widest">
+            <Download className="mr-2 h-3.5 w-3.5" />
+            Export Project
+          </Button>
         </div>
-      </div>
+      </header>
 
-      {/* Content */}
+      {/* Item Feed (Chat Style) */}
       <div
         ref={scrollRef}
-        className="flex-1 min-h-0 overflow-y-auto space-y-3"
-        style={{ paddingBottom: bottomPadding > 0 ? `${bottomPadding}px` : undefined }}
+        className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-8 space-y-12"
       >
         {sortedItems.length === 0 ? (
-          <div className="text-center py-12 px-5 border-2 border-dashed border-muted rounded-md text-muted-foreground">
-            <p className="text-sm">No items in this story</p>
-            <p className="text-xs mt-2">Generate speech using the box below to add items</p>
+          <div className="h-full flex flex-col items-center justify-center text-muted-foreground/20 text-[10px] font-bold uppercase tracking-[0.2em] border border-dashed border-white/5 rounded-3xl mx-4">
+            Project is empty. Initialize dialogue below.
           </div>
         ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={sortedItems.map((item) => item.generation_id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="space-y-3">
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={sortedItems.map((item) => item.generation_id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-10">
                 {sortedItems.map((item, index) => (
-                  <div
-                    key={item.id}
-                    ref={(el) => {
-                      if (el) {
-                        itemRefsMap.current.set(item.generation_id, el);
-                      } else {
-                        itemRefsMap.current.delete(item.generation_id);
-                      }
-                    }}
-                  >
+                  <div key={item.id} ref={(el) => { if (el) itemRefsMap.current.set(item.generation_id, el); else itemRefsMap.current.delete(item.generation_id); }}>
                     <SortableStoryChatItem
                       item={item}
                       storyId={story.id}
@@ -370,6 +191,11 @@ export function StoryContent() {
             </SortableContext>
           </DndContext>
         )}
+      </div>
+
+      {/* Synthesis Box - Anchored at bottom of chat column */}
+      <div className="p-8 pt-0">
+          <FloatingGenerateBox showVoiceSelector />
       </div>
     </div>
   );

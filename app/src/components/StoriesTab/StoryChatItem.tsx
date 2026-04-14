@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Mic, MoreHorizontal, Play, Trash2 } from 'lucide-react';
+import { GripVertical, Mic, MoreHorizontal, Play, Trash2, Clock } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,7 +9,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Textarea } from '@/components/ui/textarea';
 import type { StoryItemDetail } from '@/lib/api/types';
 import { cn } from '@/lib/utils/cn';
 import { useStoryStore } from '@/stores/storyStore';
@@ -40,13 +39,11 @@ export function StoryChatItem({
 
   const avatarUrl = `${serverUrl}/profiles/${item.profile_id}/avatar`;
 
-  // Check if this item is currently playing based on timecode
   const itemStartMs = item.start_time_ms;
   const itemEndMs = item.start_time_ms + item.duration * 1000;
   const isCurrentlyPlaying = isPlaying && currentTimeMs >= itemStartMs && currentTimeMs < itemEndMs;
 
   const handlePlay = () => {
-    // Seek to the start of this item
     seek(itemStartMs);
   };
 
@@ -61,33 +58,25 @@ export function StoryChatItem({
   return (
     <div
       className={cn(
-        'flex items-start gap-3 p-4 rounded-lg border transition-colors',
-        isCurrentlyPlaying && 'bg-muted/70 border-primary',
-        !isCurrentlyPlaying && 'hover:bg-muted/50',
-        isDragging && 'opacity-50 shadow-lg',
+        'group flex items-start gap-5 p-4 rounded-3xl transition-all duration-500 relative',
+        isCurrentlyPlaying && 'bg-primary/[0.03] shadow-[0_0_30px_rgba(234,179,8,0.05)] border-l-2 border-primary',
+        isDragging && 'opacity-50 scale-95 ring-2 ring-primary/20',
+        !isCurrentlyPlaying && 'hover:bg-white/[0.02]'
       )}
     >
-      {/* Drag Handle */}
-      {dragHandleProps && (
-        <button
-          type="button"
-          className="shrink-0 cursor-grab active:cursor-grabbing touch-none text-muted-foreground hover:text-foreground transition-colors"
-          {...dragHandleProps}
-        >
-          <GripVertical className="h-5 w-5" />
-        </button>
-      )}
-
-      {/* Voice Avatar */}
-      <div className="shrink-0">
-        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+      {/* 1. Avatar Container */}
+      <div className="shrink-0 relative">
+        <div className={cn(
+          "h-12 w-12 rounded-full bg-[#111111] border border-white/[0.08] flex items-center justify-center overflow-hidden transition-all duration-500",
+          isCurrentlyPlaying && "border-primary shadow-[0_0_15px_rgba(234,179,8,0.3)] scale-110"
+        )}>
           {!avatarError ? (
             <img
               src={avatarUrl}
-              alt={`${item.profile_name} avatar`}
+              alt={item.profile_name}
               className={cn(
-                'h-full w-full object-cover transition-all duration-200',
-                !isCurrentlyPlaying && 'grayscale'
+                'h-full w-full object-cover transition-all duration-300',
+                !isCurrentlyPlaying && 'grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100'
               )}
               onError={() => setAvatarError(true)}
             />
@@ -95,72 +84,77 @@ export function StoryChatItem({
             <Mic className="h-5 w-5 text-muted-foreground" />
           )}
         </div>
+        {isCurrentlyPlaying && (
+           <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-1 shadow-lg ring-2 ring-black">
+              <Play className="h-2 w-2 fill-current" />
+           </div>
+        )}
       </div>
 
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="font-medium text-sm">{item.profile_name}</span>
-          <span className="text-xs text-muted-foreground">{item.language}</span>
-          <span className="text-xs text-muted-foreground tabular-nums ml-auto">
-            {formatTime(itemStartMs)}
-          </span>
-        </div>
-        <Textarea
-          value={item.text}
-          className="flex-1 resize-none text-sm text-muted-foreground select-text bg-card cursor-text"
-          readOnly
-          onDoubleClick={handlePlay}
-        />
-      </div>
+      {/* 2. Content Column */}
+      <div className="flex-1 min-w-0 flex flex-col gap-2">
+        <header className="flex items-center justify-between">
+           <div className="flex items-center gap-3">
+              <span className={cn(
+                "font-bold text-[14px] transition-colors",
+                isCurrentlyPlaying ? "text-primary" : "text-foreground"
+              )}>{item.profile_name}</span>
+              <div className="text-[10px] font-bold bg-white/5 text-muted-foreground/60 px-2 py-0.5 rounded-lg border border-white/[0.04] uppercase tracking-wider">
+                 {item.language}
+              </div>
+           </div>
+           
+           <div className="flex items-center gap-4">
+              <div className="text-[11px] font-mono font-bold text-muted-foreground/30 tabular-nums">
+                 {formatTime(itemStartMs)}
+              </div>
+              
+              {/* Context Actions */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-[#111111] border-white/10">
+                  <DropdownMenuItem onClick={handlePlay}>
+                    <Play className="mr-2 h-3.5 w-3.5" /> Play from here
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onRemove} className="text-destructive">
+                    <Trash2 className="mr-2 h-3.5 w-3.5" /> Remove from Story
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-      {/* Actions */}
-      <div className="shrink-0">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Actions">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handlePlay}>
-              <Play className="mr-2 h-4 w-4" />
-              Play from here
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onRemove} className="text-destructive focus:text-destructive">
-              <Trash2 className="mr-2 h-4 w-4" />
-              Remove from Story
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              {dragHandleProps && (
+                <button
+                  type="button"
+                  className="cursor-move opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary"
+                  {...dragHandleProps}
+                >
+                  <GripVertical className="h-4 w-4" />
+                </button>
+              )}
+           </div>
+        </header>
+
+        <p className={cn(
+          "text-[15px] leading-relaxed transition-all",
+          isCurrentlyPlaying ? "text-foreground font-medium" : "text-muted-foreground group-hover:text-foreground/80"
+        )}>
+          {item.text}
+        </p>
       </div>
     </div>
   );
 }
 
-// Sortable wrapper component
 export function SortableStoryChatItem(props: Omit<StoryChatItemProps, 'dragHandleProps' | 'isDragging'>) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: props.item.generation_id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.item.generation_id });
+  const style = { transform: CSS.Transform.toString(transform), transition };
   return (
     <div ref={setNodeRef} style={style} {...attributes}>
-      <StoryChatItem
-        {...props}
-        dragHandleProps={listeners}
-        isDragging={isDragging}
-      />
+      <StoryChatItem {...props} dragHandleProps={listeners} isDragging={isDragging} />
     </div>
   );
 }
