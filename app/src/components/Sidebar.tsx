@@ -1,9 +1,10 @@
 import { Link, useMatchRoute } from '@tanstack/react-router';
-import { Box, BookOpen, Loader2, Mic, Server, Speaker, Volume2 } from 'lucide-react';
+import { Box, BookOpen, Loader2, Mic, Server, Speaker, Volume2, Settings2 } from 'lucide-react';
 import voiceboxLogo from '@/assets/voicebox-logo.png';
 import { cn } from '@/lib/utils/cn';
 import { useGenerationStore } from '@/stores/generationStore';
 import { usePlayerStore } from '@/stores/playerStore';
+import { motion } from 'framer-motion';
 
 interface SidebarProps {
   isMacOS?: boolean;
@@ -15,7 +16,6 @@ const tabs = [
   { id: 'voices', path: '/voices', icon: Mic, label: 'Voices' },
   { id: 'audio', path: '/audio', icon: Speaker, label: 'Audio' },
   { id: 'models', path: '/models', icon: Box, label: 'Models' },
-  { id: 'server', path: '/server', icon: Server, label: 'Server' },
 ];
 
 export function Sidebar({ isMacOS }: SidebarProps) {
@@ -27,20 +27,23 @@ export function Sidebar({ isMacOS }: SidebarProps) {
   return (
     <div
       className={cn(
-        'fixed left-0 top-0 h-full w-20 bg-sidebar border-r border-border flex flex-col items-center py-6 gap-6',
+        'fixed left-0 top-0 h-full w-20 bg-sidebar border-r border-border flex flex-col items-center py-8 gap-8 z-50',
+        'backdrop-blur-md bg-opacity-80',
         isMacOS && 'pt-14',
       )}
     >
-      {/* Logo */}
-      <div className="mb-2">
-        <img src={voiceboxLogo} alt="Voicebox" className="w-12 h-12 object-contain" />
+      {/* Logo with subtle glow */}
+      <div className="relative group">
+        <div className="absolute -inset-2 bg-primary/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center relative z-10 shadow-[0_0_15px_rgba(94,106,210,0.4)]">
+           <Volume2 className="h-6 w-6 text-white" />
+        </div>
       </div>
 
       {/* Navigation Buttons */}
-      <div className="flex flex-col gap-3">
+      <nav className="flex flex-col gap-4">
         {tabs.map((tab) => {
           const Icon = tab.icon;
-          // For index route, use exact match; for others, use default matching
           const isActive =
             tab.path === '/'
               ? matchRoute({ to: '/', exact: true })
@@ -50,34 +53,65 @@ export function Sidebar({ isMacOS }: SidebarProps) {
             <Link
               key={tab.id}
               to={tab.path}
-              className={cn(
-                'w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200',
-                'hover:bg-muted/50',
-                isActive ? 'bg-muted/50 text-foreground shadow-lg' : 'text-muted-foreground',
-              )}
-              title={tab.label}
-              aria-label={tab.label}
+              className="relative group p-0.5"
             >
-              <Icon className="h-5 w-5" />
+              <div
+                className={cn(
+                  'w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 relative',
+                  isActive 
+                    ? 'text-primary-foreground' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+                )}
+                title={tab.label}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="active-tab"
+                    className="absolute inset-0 bg-primary rounded-xl shadow-[0_0_20px_rgba(94,106,210,0.4)]"
+                    transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                <Icon className="h-5 w-5 relative z-10" />
+              </div>
+              
+              {/* Tooltip-like label on hover if we wanted it wider, but for now just the icon */}
             </Link>
           );
         })}
-      </div>
+      </nav>
 
-      {/* Spacer to push loader to bottom */}
       <div className="flex-1" />
 
-      {/* Generation Loader */}
-      {isGenerating && (
-        <div
+      {/* Bottom Section */}
+      <div className="flex flex-col gap-4 mb-4">
+        <Link
+          to="/server"
           className={cn(
-            'w-full flex items-center justify-center transition-all duration-200',
-            isPlayerVisible ? 'mb-[120px]' : 'mb-0',
+            'w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200',
+            'text-muted-foreground hover:text-foreground hover:bg-white/5',
+            matchRoute({ to: '/server' }) && 'text-foreground bg-white/5'
           )}
+          title="Server Settings"
         >
-          <Loader2 className="h-6 w-6 text-accent animate-spin" />
-        </div>
-      )}
+          <Server className="h-5 w-5" />
+        </Link>
+
+        {/* Generation Loader */}
+        {isGenerating ? (
+          <div
+            className={cn(
+              'w-12 h-12 flex items-center justify-center transition-all duration-500 bg-primary/10 rounded-xl border border-primary/20',
+              isPlayerVisible ? 'translate-y-[-100px]' : 'translate-y-0',
+            )}
+          >
+            <Loader2 className="h-5 w-5 text-primary animate-spin" />
+          </div>
+        ) : (
+             <div className="w-12 h-12 flex items-center justify-center text-muted-foreground/30">
+                <div className="w-1.5 h-1.5 bg-current rounded-full" />
+             </div>
+        )}
+      </div>
     </div>
   );
 }

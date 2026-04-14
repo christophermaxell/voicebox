@@ -41,6 +41,7 @@
     "@tauri-apps/plugin-updater": "^2.9.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "daisyui": "^5.5.19",
     "date-fns": "^3.6.0",
     "framer-motion": "^12.29.0",
     "lucide-react": "^0.454.0",

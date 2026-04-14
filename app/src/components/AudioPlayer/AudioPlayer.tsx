@@ -820,91 +820,78 @@ export function AudioPlayer() {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 z-50">
-      <div className="container mx-auto px-4 py-3 max-w-7xl">
-        <div className="flex items-center gap-4">
-          {/* Play/Pause Button */}
-          <Button
-            variant="ghost"
-            size="icon"
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-5xl px-6 z-50">
+      <div className="bg-[#0f1011]/80 backdrop-blur-2xl border border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl p-4 flex items-center gap-6 relative overflow-hidden group">
+        {/* Subtle inner glow */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent pointer-events-none" />
+        
+        <div className="flex items-center gap-4 relative z-10 w-full">
+          {/* Play/Pause Button - Premium Circle */}
+          <button
             onClick={handlePlayPause}
             disabled={isLoading || duration === 0}
-            className="shrink-0"
-            title={duration === 0 && !isLoading ? 'Audio not loaded' : ''}
+            className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white shadow-[0_0_20px_rgba(94,106,210,0.4)] hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale shrink-0"
           >
-            {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-          </Button>
+            {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-1" />}
+          </button>
 
-          {/* Waveform */}
-          <div className="flex-1 min-w-0 flex flex-col gap-1">
-            <div ref={waveformRef} className="w-full min-h-[80px]" />
-            {duration > 0 && (
-              <Slider
-                value={duration > 0 ? [(currentTime / duration) * 100] : [0]}
-                onValueChange={handleSeek}
-                max={100}
-                step={0.1}
-                className="w-full"
-              />
-            )}
-            {isLoading && (
-              <div className="text-xs text-muted-foreground text-center py-2">Loading audio...</div>
-            )}
-            {error && <div className="text-xs text-destructive text-center py-2">{error}</div>}
+          {/* Title & Info */}
+          <div className="flex flex-col gap-0.5 min-w-[120px] max-w-[200px] shrink-0">
+            <div className="text-sm font-semibold truncate text-foreground/90">
+              {title || 'Current Track'}
+            </div>
+            <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground/60">
+              <span>{formatAudioDuration(currentTime)}</span>
+              <span className="opacity-30">/</span>
+              <span>{formatAudioDuration(duration)}</span>
+            </div>
           </div>
 
-          {/* Time Display */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0 min-w-[100px]">
-            <span className="font-mono">{formatAudioDuration(currentTime)}</span>
-            <span>/</span>
-            <span className="font-mono">{formatAudioDuration(duration)}</span>
+          {/* Waveform Visualization - Full area */}
+          <div className="flex-1 min-w-0 h-10 flex items-center group/wave relative">
+            <div ref={waveformRef} className="w-full h-full opacity-60 group-hover/wave:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 cursor-pointer" onClick={(e) => {
+               // Handle click to seek if needed, but WaveSurfer usually handles this
+            }} />
           </div>
 
-          {/* Title */}
-          {title && (
-            <div className="text-sm font-medium truncate max-w-[200px] shrink-0">{title}</div>
-          )}
-
-          {/* Loop Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleLoop}
-            className={isLooping ? 'text-primary' : ''}
-            title="Toggle loop"
-          >
-            <Repeat className="h-4 w-4" />
-          </Button>
-
-          {/* Volume Control */}
-          <div className="flex items-center gap-2 shrink-0 w-[120px]">
+          {/* Controls Group */}
+          <div className="flex items-center gap-6 shrink-0">
+            {/* Loop */}
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setVolume(volume > 0 ? 0 : 1)}
-              className="h-8 w-8"
+              onClick={toggleLoop}
+              className={cn("h-8 w-8 rounded-lg transition-colors", isLooping ? 'bg-primary/20 text-primary border border-primary/20' : 'text-muted-foreground/40 hover:text-foreground')}
             >
-              {volume > 0 ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              <Repeat className="h-4 w-4" />
             </Button>
-            <Slider
-              value={[volume * 100]}
-              onValueChange={handleVolumeChange}
-              max={100}
-              step={1}
-              className="flex-1"
-            />
-          </div>
 
-          {/* Close Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleClose}
-            className="shrink-0"
-            title="Close player"
-          >
-            <X className="h-5 w-5" />
-          </Button>
+            {/* Volume */}
+            <div className="flex items-center gap-3 w-32 group/vol">
+              <button
+                 onClick={() => setVolume(volume > 0 ? 0 : 1)}
+                 className="text-muted-foreground/40 group-hover/vol:text-foreground transition-colors"
+              >
+                {volume > 0 ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              </button>
+              <Slider
+                value={[volume * 100]}
+                onValueChange={handleVolumeChange}
+                max={100}
+                step={1}
+                className="flex-1 opacity-40 group-hover/vol:opacity-100 transition-opacity"
+              />
+            </div>
+
+            {/* Close */}
+            <button
+               onClick={handleClose}
+               className="p-2 text-muted-foreground/20 hover:text-destructive transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

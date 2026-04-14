@@ -1,6 +1,6 @@
 import { useMatchRoute } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Loader2, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { Loader2, SlidersHorizontal, Sparkles, ChevronDown, Command } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
@@ -46,121 +46,39 @@ export function FloatingGenerateBox({
   const addStoryItem = useAddStoryItem();
   const { toast } = useToast();
 
-  // Calculate if track editor is visible (on stories route with items)
   const hasTrackEditor = isStoriesRoute && currentStory && currentStory.items.length > 0;
 
   const { form, handleSubmit, isPending } = useGenerationForm({
     onSuccess: async (generationId) => {
       setIsExpanded(false);
-      // If on stories route and a story is selected, add generation to story
       if (isStoriesRoute && selectedStoryId && generationId) {
         try {
           await addStoryItem.mutateAsync({
             storyId: selectedStoryId,
             data: { generation_id: generationId },
           });
-          toast({
-            title: 'Added to story',
-            description: `Generation added to "${currentStory?.name || 'story'}"`,
-          });
         } catch (error) {
-          toast({
-            title: 'Failed to add to story',
-            description:
-              error instanceof Error ? error.message : 'Could not add generation to story',
-            variant: 'destructive',
-          });
+          console.error('Failed to add to story', error);
         }
       }
     },
   });
 
-  // Click away handler to collapse the box
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      const target = event.target as HTMLElement;
-
-      // Don't collapse if clicking inside the container
-      if (containerRef.current?.contains(target)) {
-        return;
-      }
-
-      // Don't collapse if clicking on a Select dropdown (which renders in a portal)
-      if (
-        target.closest('[role="listbox"]') ||
-        target.closest('[data-radix-popper-content-wrapper]')
-      ) {
-        return;
-      }
-
+      if (containerRef.current?.contains(event.target as HTMLElement)) return;
+      if ((event.target as HTMLElement).closest('[role="listbox"]') || (event.target as HTMLElement).closest('[data-radix-popper-content-wrapper]')) return;
       setIsExpanded(false);
     }
-
-    if (isExpanded) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    if (isExpanded) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isExpanded]);
 
-  // Set first voice as default if none selected
   useEffect(() => {
     if (!selectedProfileId && profiles && profiles.length > 0) {
       setSelectedProfileId(profiles[0].id);
     }
   }, [selectedProfileId, profiles, setSelectedProfileId]);
-
-  // Auto-resize textarea based on content (only when expanded)
-  useEffect(() => {
-    if (!isExpanded) {
-      // Reset textarea height after collapse animation completes
-      const timeoutId = setTimeout(() => {
-        const textarea = textareaRef.current;
-        if (textarea) {
-          textarea.style.height = '32px';
-          textarea.style.overflowY = 'hidden';
-        }
-      }, 200); // Wait for animation to complete
-      return () => clearTimeout(timeoutId);
-    }
-
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const adjustHeight = () => {
-      textarea.style.height = 'auto';
-      const scrollHeight = textarea.scrollHeight;
-      const minHeight = 100; // Expanded minimum
-      const maxHeight = 300; // Max height in pixels
-      const targetHeight = Math.max(minHeight, Math.min(scrollHeight, maxHeight));
-      textarea.style.height = `${targetHeight}px`;
-
-      // Show scrollbar if content exceeds max height
-      if (scrollHeight > maxHeight) {
-        textarea.style.overflowY = 'auto';
-      } else {
-        textarea.style.overflowY = 'hidden';
-      }
-    };
-
-    // Small delay to let framer animation complete
-    const timeoutId = setTimeout(() => {
-      adjustHeight();
-    }, 200);
-
-    // Adjust on mount and when value changes
-    adjustHeight();
-
-    // Watch for input changes
-    textarea.addEventListener('input', adjustHeight);
-
-    return () => {
-      clearTimeout(timeoutId);
-      textarea.removeEventListener('input', adjustHeight);
-    };
-  }, [isExpanded]);
 
   async function onSubmit(data: Parameters<typeof handleSubmit>[0]) {
     await handleSubmit(data, selectedProfileId);
@@ -170,15 +88,12 @@ export function FloatingGenerateBox({
     <motion.div
       ref={containerRef}
       className={cn(
-        'fixed right-auto',
+        'fixed z-[100] transition-all duration-500',
         isStoriesRoute
-          ? // Position aligned with story list: after sidebar + padding, width 360px
-            'left-[calc(5rem+2rem)] w-[360px]'
+          ? 'left-[calc(5rem+2rem)] w-[360px]'
           : 'left-[calc(5rem+2rem)] w-[calc((100%-5rem-4rem)/2-1rem)]',
       )}
       style={{
-        // On stories route: offset by track editor height when visible
-        // On other routes: offset by audio player height when visible
         bottom: hasTrackEditor
           ? `${trackEditorHeight + 24}px`
           : isPlayerOpen
@@ -187,248 +102,178 @@ export function FloatingGenerateBox({
       }}
     >
       <motion.div
-        className="bg-background/30 backdrop-blur-2xl border border-accent/20 rounded-[2rem] shadow-2xl hover:bg-background/40 hover:border-accent/20 transition-all duration-300 p-3"
-        transition={{ duration: 0.6, ease: 'easeInOut' }}
+        layout
+        className="bg-[#191a1b] border border-[#23252a] rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] overflow-hidden"
+        transition={{ type: 'spring', damping: 20, stiffness: 200 }}
       >
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="flex gap-2">
-              <motion.div
-                className={cn('flex-1', isExpanded && 'mr-12')}
-                transition={{ duration: 0.3, ease: 'easeOut' }}
-              >
-                {/* Text field - hidden when in instruct mode */}
-                <div style={{ display: isInstructMode ? 'none' : 'block' }}>
-                  <FormField
-                    control={form.control}
-                    name="text"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <motion.div
-                            animate={{
-                              height: isExpanded ? 'auto' : '32px',
-                            }}
-                            transition={{ duration: 0.15, ease: 'easeOut' }}
-                            style={{ overflow: 'hidden' }}
-                          >
-                            <Textarea
-                              {...field}
-                              ref={(node: HTMLTextAreaElement | null) => {
-                                // Store ref for auto-resize (only for active field)
-                                if (!isInstructMode) {
-                                  textareaRef.current = node;
-                                }
-                                // Forward ref to react-hook-form
-                                if (typeof field.ref === 'function') {
-                                  field.ref(node);
-                                }
-                              }}
-                              placeholder={
-                                isStoriesRoute && currentStory
-                                  ? `Generate speech for "${currentStory.name}"...`
-                                  : selectedProfile
-                                    ? `Generate speech using ${selectedProfile.name}...`
-                                    : 'Select a voice profile above...'
-                              }
-                              className="resize-none bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none focus:ring-0 outline-none ring-0 rounded-2xl text-sm placeholder:text-muted-foreground/60 w-full"
-                              style={{
-                                minHeight: isExpanded ? '100px' : '32px',
-                                maxHeight: '300px',
-                              }}
-                              disabled={!selectedProfileId}
-                              onClick={() => setIsExpanded(true)}
-                              onFocus={() => setIsExpanded(true)}
-                            />
-                          </motion.div>
-                        </FormControl>
-                        <FormMessage className="text-xs" />
-                      </FormItem>
-                    )}
-                  />
+            {/* Header / Mode Indicator */}
+            <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 bg-white/2">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary tracking-tighter uppercase p-1">
+                   {isInstructMode ? <SlidersHorizontal className="h-3 w-3" /> : <Command className="h-3 w-3" />}
+                   {isInstructMode ? 'Instruction Mode' : 'Speech Text'}
                 </div>
-                {/* Instruct field - hidden when in text mode */}
-                <div style={{ display: isInstructMode ? 'block' : 'none' }}>
-                  <FormField
-                    control={form.control}
-                    name="instruct"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <motion.div
-                            animate={{
-                              height: isExpanded ? 'auto' : '32px',
-                            }}
-                            transition={{ duration: 0.15, ease: 'easeOut' }}
-                            style={{ overflow: 'hidden' }}
-                          >
-                            <Textarea
-                              {...field}
-                              ref={(node: HTMLTextAreaElement | null) => {
-                                // Store ref for auto-resize (only for active field)
-                                if (isInstructMode) {
-                                  textareaRef.current = node;
-                                }
-                                // Forward ref to react-hook-form
-                                if (typeof field.ref === 'function') {
-                                  field.ref(node);
-                                }
-                              }}
-                              placeholder="e.g. very happy and excited"
-                              className="resize-none bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none focus:ring-0 outline-none ring-0 rounded-2xl text-sm placeholder:text-muted-foreground/60 w-full"
-                              style={{
-                                minHeight: isExpanded ? '100px' : '32px',
-                                maxHeight: '300px',
-                              }}
-                              disabled={!selectedProfileId}
-                              onClick={() => setIsExpanded(true)}
-                              onFocus={() => setIsExpanded(true)}
-                            />
-                          </motion.div>
-                        </FormControl>
-                        <FormMessage className="text-xs" />
-                      </FormItem>
-                    )}
-                  />
+                <div className="flex items-center gap-2">
+                   {isExpanded && (
+                       <div className="text-[10px] text-muted-foreground flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
+                          <kbd className="opacity-70">ESC</kbd> to close
+                       </div>
+                   )}
+                   <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className={cn("h-6 w-6 rounded-md transition-colors", isInstructMode ? "text-primary bg-primary/10" : "text-muted-foreground")}
+                      onClick={() => setIsInstructMode(!isInstructMode)}
+                    >
+                      <SlidersHorizontal className="h-3 w-3" />
+                  </Button>
                 </div>
-              </motion.div>
+            </div>
 
-              <div className="relative shrink-0">
-                <div className="group relative">
-                  <Button
+            <div className="p-3">
+              <div className="relative">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={isInstructMode ? 'instruct' : 'text'}
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 1.02 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <FormField
+                      control={form.control}
+                      name={isInstructMode ? "instruct" : "text"}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              placeholder={
+                                isInstructMode 
+                                  ? "Describe the emotion, e.g., 'very happy and energetic'..." 
+                                  : "Type or paste the text you want to synthesize..."
+                              }
+                              className={cn(
+                                "resize-none bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-1 text-sm leading-relaxed placeholder:text-muted-foreground/30 transition-all min-h-[40px]",
+                                isExpanded ? "min-h-[140px]" : "min-h-[40px]"
+                              )}
+                              onClick={() => setIsExpanded(true)}
+                              onFocus={() => setIsExpanded(true)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                                  e.preventDefault();
+                                  form.handleSubmit(onSubmit)();
+                                }
+                              }}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </motion.div>
+                </AnimatePresence>
+                
+                {/* Submit Trigger - Integrated into the corner when expanded */}
+                <div className="absolute bottom-0 right-0 p-1">
+                   <Button
                     type="submit"
                     disabled={isPending || !selectedProfileId}
-                    className="h-10 w-10 rounded-full bg-accent hover:bg-accent/90 hover:scale-105 text-accent-foreground shadow-lg hover:shadow-accent/50 transition-all duration-200"
-                    size="icon"
+                    size={isExpanded ? "default" : "icon"}
+                    className={cn(
+                      "transition-all duration-300 shadow-xl",
+                      isExpanded ? "px-4 rounded-lg bg-primary" : "h-8 w-8 rounded-lg bg-primary"
+                    )}
                   >
                     {isPending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Sparkles className="h-4 w-4" />
+                      <>
+                        <Sparkles className={cn("h-3.5 w-3.5", isExpanded && "mr-2")} />
+                        {isExpanded && "Generate"}
+                      </>
                     )}
                   </Button>
-                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-md bg-popover px-3 py-1.5 text-xs text-popover-foreground border border-border opacity-0 transition-opacity group-hover:opacity-100 z-[9999]">
-                    {isPending
-                      ? 'Generating...'
-                      : !selectedProfileId
-                        ? 'Select a voice profile first'
-                        : 'Generate speech'}
-                  </span>
                 </div>
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute top-0 right-[calc(100%+0.5rem)]"
-                    >
-                      <div className="group relative">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setIsInstructMode(!isInstructMode)}
-                          className={cn(
-                            'h-10 w-10 rounded-full transition-all duration-200',
-                            isInstructMode
-                              ? 'bg-accent text-accent-foreground border border-accent hover:bg-accent/90'
-                              : 'bg-card border border-border hover:bg-background/50',
-                          )}
-                        >
-                          <SlidersHorizontal className="h-4 w-4" />
-                        </Button>
-                        <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-md bg-popover px-3 py-1.5 text-xs text-popover-foreground border border-border opacity-0 transition-opacity group-hover:opacity-100 z-[9999]">
-                          Fine tune instructions
-                        </span>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
-            </div>
 
-            <AnimatePresence>
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: 'easeOut' }}
-                className=" mt-3"
-              >
-                <div className="flex items-center gap-2">
-                  {showVoiceSelector && (
-                    <div className="flex-1">
-                      <Select
-                        value={selectedProfileId || ''}
-                        onValueChange={(value) => setSelectedProfileId(value || null)}
-                      >
-                        <SelectTrigger className="h-8 text-xs bg-card border-border rounded-full hover:bg-background/50 transition-all w-full">
-                          <SelectValue placeholder="Select a voice..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {profiles?.map((profile) => (
-                            <SelectItem key={profile.id} value={profile.id} className="text-xs">
-                              {profile.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+              {/* Advanced Controls Area */}
+              <AnimatePresence>
+                {isExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="mt-4 pt-4 border-t border-white/5"
+                  >
+                    <div className="flex gap-2">
+                      {showVoiceSelector && (
+                        <div className="flex-1">
+                          <Select
+                            value={selectedProfileId || ''}
+                            onValueChange={(value) => setSelectedProfileId(value || null)}
+                          >
+                            <SelectTrigger className="h-9 text-[11px] bg-[#0f1011] border-[#23252a] rounded-lg">
+                               <div className="flex items-center gap-2 truncate">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(94,106,210,0.8)]" />
+                                  <SelectValue placeholder="Voice" />
+                               </div>
+                            </SelectTrigger>
+                            <SelectContent className="bg-[#191a1b] border-[#23252a]">
+                              {profiles?.map((profile) => (
+                                <SelectItem key={profile.id} value={profile.id} className="text-xs">
+                                  {profile.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      <FormField
+                        control={form.control}
+                        name="language"
+                        render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <SelectTrigger className="h-9 text-[11px] bg-[#0f1011] border-[#23252a] rounded-lg">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-[#191a1b] border-[#23252a]">
+                                {LANGUAGE_OPTIONS.map((lang) => (
+                                  <SelectItem key={lang.value} value={lang.value} className="text-xs">
+                                    {lang.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="modelSize"
+                        render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <SelectTrigger className="h-9 text-[11px] bg-[#0f1011] border-[#23252a] rounded-lg">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-[#191a1b] border-[#23252a]">
+                                <SelectItem value="1.7B" className="text-xs">Base 1.7B</SelectItem>
+                                <SelectItem value="0.6B" className="text-xs">Fast 0.6B</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )}
+                      />
                     </div>
-                  )}
-
-                  <FormField
-                    control={form.control}
-                    name="language"
-                    render={({ field }) => (
-                      <FormItem className="flex-1 space-y-0">
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="h-8 text-xs bg-card border-border rounded-full hover:bg-background/50 transition-all">
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {LANGUAGE_OPTIONS.map((lang) => (
-                              <SelectItem key={lang.value} value={lang.value} className="text-xs">
-                                {lang.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage className="text-xs" />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="modelSize"
-                    render={({ field }) => (
-                      <FormItem className="flex-1 space-y-0">
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="h-8 text-xs bg-card border-border rounded-full hover:bg-background/50 transition-all">
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="1.7B" className="text-xs text-muted-foreground">
-                              Qwen3-TTS 1.7B
-                            </SelectItem>
-                            <SelectItem value="0.6B" className="text-xs text-muted-foreground">
-                              Qwen3-TTS 0.6B
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage className="text-xs" />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </motion.div>
-            </AnimatePresence>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </form>
         </Form>
       </motion.div>

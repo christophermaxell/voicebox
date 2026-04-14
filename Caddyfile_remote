@@ -1,0 +1,109 @@
+{
+  email admin@coverl.id.lv
+}
+
+coverl.id.lv {
+  # Voicebox Application
+  handle_path /voicebox/api/* {
+    reverse_proxy 172.21.0.1:8100
+  }
+  handle /voicebox/* {
+    root * /srv/public_html
+    file_server
+    try_files {path} {path}/ /voicebox/index.html
+  }
+
+  reverse_proxy portfolio-site:80
+}
+
+mazer.coverl.id.lv {
+  reverse_proxy mazer-static:80
+}
+
+daisyui.coverl.id.lv {
+  reverse_proxy daisyui-static:80
+}
+
+frappe.coverl.id.lv {
+  reverse_proxy frappe-static:80
+}
+
+maptoposter.coverl.id.lv {
+  reverse_proxy maptoposter-static:80
+}
+
+musify.coverl.id.lv {
+  reverse_proxy musify-static:80
+}
+
+ntsc.coverl.id.lv {
+  reverse_proxy ntsc-static:80
+}
+
+apis.coverl.id.lv {
+  reverse_proxy apis-static:80
+}
+
+design.coverl.id.lv {
+  reverse_proxy design-static:80
+}
+
+radio.coverl.id.lv {
+  respond "<!doctype html><html><head><meta charset='utf-8'><title>E-RADIO</title></head><body style='font-family:Segoe UI,Arial;padding:28px;background:#0f1730;color:#e9ecf8'><h1>E-RADIO</h1><p>Portfolio showcase page is live. Runtime is intentionally isolated because radio.ledurga.lv is already in production.</p><p><a href='https://coverl.id.lv' style='color:#67d3ff'>Back to portfolio</a></p></body></html>" 200
+}
+
+tts.coverl.id.lv {
+  respond "<!doctype html><html><head><meta charset='utf-8'><title>LuxTTS</title></head><body style='font-family:Segoe UI,Arial;padding:28px;background:#0f1730;color:#e9ecf8'><h1>LuxTTS</h1><p>Portfolio showcase page is live. Full runtime deployment is staged for dedicated compute resources.</p><p><a href='https://coverl.id.lv' style='color:#67d3ff'>Back to portfolio</a></p></body></html>" 200
+}
+
+whisper.coverl.id.lv {
+  respond "<!doctype html><html><head><meta charset='utf-8'><title>OpenWhisper</title></head><body style='font-family:Segoe UI,Arial;padding:28px;background:#0f1730;color:#e9ecf8'><h1>OpenWhisper</h1><p>Portfolio showcase page is live. API runtime is queued after resource profile validation.</p><p><a href='https://coverl.id.lv' style='color:#67d3ff'>Back to portfolio</a></p></body></html>" 200
+}
+
+st3gg.coverl.id.lv {
+  respond "<!doctype html><html><head><meta charset='utf-8'><title>ST3GG</title></head><body style='font-family:Segoe UI,Arial;padding:28px;background:#0f1730;color:#e9ecf8'><h1>ST3GG</h1><p>Portfolio showcase page is live. Stack classification is pending before runtime deployment.</p><p><a href='https://coverl.id.lv' style='color:#67d3ff'>Back to portfolio</a></p></body></html>" 200
+}
+
+livewhisper.coverl.id.lv {
+  respond "<!doctype html><html><head><meta charset='utf-8'><title>WhisperLiveKit</title></head><body style='font-family:Segoe UI,Arial;padding:28px;background:#0f1730;color:#e9ecf8'><h1>WhisperLiveKit</h1><p>Portfolio showcase page is live. Low-latency backend rollout is staged.</p><p><a href='https://coverl.id.lv' style='color:#67d3ff'>Back to portfolio</a></p></body></html>" 200
+}
+
+voicebox.coverl.id.lv {
+  respond "<!doctype html><html><head><meta charset='utf-8'><title>voicebox</title></head><body style='font-family:Segoe UI,Arial;padding:28px;background:#0f1730;color:#e9ecf8'><h1>voicebox</h1><p>Portfolio showcase page is live. Full backend runtime is staged for high-capacity nodes.</p><p><a href='https://coverl.id.lv' style='color:#67d3ff'>Back to portfolio</a></p></body></html>" 200
+}
+
+facefusion.coverl.id.lv {
+  respond "<!doctype html><html><head><meta charset='utf-8'><title>facefusion</title></head><body style='font-family:Segoe UI,Arial;padding:28px;background:#0f1730;color:#e9ecf8'><h1>facefusion</h1><p>Portfolio showcase page is live. GPU-heavy runtime is staged separately.</p><p><a href='https://coverl.id.lv' style='color:#67d3ff'>Back to portfolio</a></p></body></html>" 200
+}
+
+start.coverl.id.lv {
+  reverse_proxy homepage:3000
+}
+
+medplum.coverl.id.lv {
+  respond "<!doctype html><html><head><meta charset='utf-8'><title>medplum</title></head><body style='font-family:Segoe UI,Arial;padding:28px;background:#0f1730;color:#e9ecf8'><h1>medplum</h1><p>Portfolio showcase page is live. Multi-service stack deployment is staged.</p><p><a href='https://coverl.id.lv' style='color:#67d3ff'>Back to portfolio</a></p></body></html>" 200
+}
+
+nango.coverl.id.lv {
+  respond "<!doctype html><html><head><meta charset='utf-8'><title>nango</title></head><body style='font-family:Segoe UI,Arial;padding:28px;background:#0f1730;color:#e9ecf8'><h1>nango</h1><p>Portfolio showcase page is live. Integration backend cluster is staged.</p><p><a href='https://coverl.id.lv' style='color:#67d3ff'>Back to portfolio</a></p></body></html>" 200
+}
+
+ntfy.coverl.id.lv {
+  reverse_proxy ntfy:80
+}
+
+openclaw.coverl.id.lv {
+  respond "<!doctype html><html><head><meta charset='utf-8'><title>openclaw</title></head><body style='font-family:Segoe UI,Arial;padding:28px;background:#0f1730;color:#e9ecf8'><h1>openclaw</h1><p>Portfolio showcase page is live. Runtime integration is staged after dependency hardening.</p><p><a href='https://coverl.id.lv' style='color:#67d3ff'>Back to portfolio</a></p></body></html>" 200
+}
+
+projects.coverl.id.lv {
+  respond "<!doctype html><html><head><meta charset='utf-8'><title>openproject</title></head><body style='font-family:Segoe UI,Arial;padding:28px;background:#0f1730;color:#e9ecf8'><h1>openproject</h1><p>Portfolio showcase page is live. Full stack deployment is staged due database footprint.</p><p><a href='https://coverl.id.lv' style='color:#67d3ff'>Back to portfolio</a></p></body></html>" 200
+}
+
+sonicpi.coverl.id.lv {
+  respond "<!doctype html><html><head><meta charset='utf-8'><title>sonic-pi</title></head><body style='font-family:Segoe UI,Arial;padding:28px;background:#0f1730;color:#e9ecf8'><h1>sonic-pi</h1><p>Portfolio showcase page is live. Audio runtime deployment is staged for isolated environment.</p><p><a href='https://coverl.id.lv' style='color:#67d3ff'>Back to portfolio</a></p></body></html>" 200
+}
+
+world.coverl.id.lv {
+  reverse_proxy worldmonitor-static:80
+}

@@ -1,0 +1,107 @@
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - /home/admin/web/coverl.id.lv/public_html:/srv/public_html:ro
+    depends_on:
+      - portfolio-site
+      - mazer-static
+      - daisyui-static
+      - frappe-static
+      - maptoposter-static
+      - musify-static
+      - ntsc-static
+      - apis-static
+      - design-static
+
+  portfolio-site:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./portfolio-site:/usr/share/nginx/html:ro
+
+  mazer-static:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./static-sites/mazer:/usr/share/nginx/html:ro
+
+  daisyui-static:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./static-sites/daisyui:/usr/share/nginx/html:ro
+
+  frappe-static:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./static-sites/frappe-ui:/usr/share/nginx/html:ro
+
+  maptoposter-static:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./static-sites/maptoposter:/usr/share/nginx/html:ro
+
+  musify-static:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./static-sites/musify:/usr/share/nginx/html:ro
+
+  ntsc-static:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./static-sites/ntsc-rs:/usr/share/nginx/html:ro
+
+  apis-static:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./static-sites/public-apis:/usr/share/nginx/html:ro
+
+  design-static:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./static-sites/awesome-design-md:/usr/share/nginx/html:ro
+
+  worldmonitor-static:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./static-sites/worldmonitor:/usr/share/nginx/html:ro
+
+  ntfy:
+    image: binwiederhier/ntfy
+    restart: unless-stopped
+    command: ["serve"]
+    environment:
+      - TZ=UTC
+    volumes:
+      - ./runtime/ntfy/cache:/var/cache/ntfy
+      - ./runtime/ntfy/etc:/etc/ntfy
+
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    restart: unless-stopped
+    environment:
+      - HOMEPAGE_ALLOWED_HOSTS=start.coverl.id.lv,localhost,127.0.0.1
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ./runtime/homepage/config:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+volumes:
+  caddy_data:
+  caddy_config:

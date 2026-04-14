@@ -13,8 +13,8 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application
-COPY . .
+# Copy the rest of the application into a 'backend' package
+COPY . /app/backend
 
 # Create data directory
 RUN mkdir -p /data
@@ -23,5 +23,5 @@ ENV VOICEBOX_DATA_DIR=/data
 # Expose port
 EXPOSE 8000
 
-# Run the server
-CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run the server as a module
+CMD ["python", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]

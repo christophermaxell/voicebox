@@ -1,6 +1,5 @@
 import { RouterProvider } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
-import voiceboxLogo from '@/assets/voicebox-logo.png';
 import ShinyText from '@/components/ShinyText';
 import { TitleBarDragRegion } from '@/components/TitleBarDragRegion';
 import { useAutoUpdater } from '@/hooks/useAutoUpdater';
@@ -9,6 +8,8 @@ import { cn } from '@/lib/utils/cn';
 import { usePlatform } from '@/platform/PlatformContext';
 import { router } from '@/router';
 import { useServerStore } from '@/stores/serverStore';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
 
 const LOADING_MESSAGES = [
   'Warming up tensors...',
@@ -22,15 +23,6 @@ const LOADING_MESSAGES = [
   'Configuring text-to-speech cores...',
   'Syncing audio buffers...',
   'Establishing model connections...',
-  'Preprocessing training data...',
-  'Validating voice samples...',
-  'Compiling inference engines...',
-  'Mapping phoneme sequences...',
-  'Aligning prosody parameters...',
-  'Activating speech synthesis...',
-  'Fine-tuning acoustic models...',
-  'Preparing voice cloning matrices...',
-  'Initializing Qwen TTS framework...',
 ];
 
 function App() {
@@ -39,134 +31,108 @@ function App() {
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const serverStartingRef = useRef(false);
 
-  // Automatically check for app updates on startup and show toast notifications
   useAutoUpdater({ checkOnMount: true, showToast: true });
 
-  // Sync stored setting to Rust on startup
   useEffect(() => {
     if (platform.metadata.isTauri) {
       const keepRunning = useServerStore.getState().keepServerRunningOnClose;
-      platform.lifecycle.setKeepServerRunning(keepRunning).catch((error) => {
-        console.error('Failed to sync initial setting to Rust:', error);
-      });
+      platform.lifecycle.setKeepServerRunning(keepRunning).catch(console.error);
     }
-    // Empty dependency array - platform is stable from context, only run once
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [platform.metadata.isTauri, platform.lifecycle]);
 
-  // Setup lifecycle callbacks
   useEffect(() => {
-    platform.lifecycle.onServerReady = () => {
-      setServerReady(true);
-    };
-    // Empty dependency array - platform is stable from context, only run once
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    platform.lifecycle.onServerReady = () => setServerReady(true);
   }, [platform.lifecycle]);
 
-  // Setup window close handler and auto-start server when running in Tauri (production only)
   useEffect(() => {
     if (!platform.metadata.isTauri) {
-      setServerReady(true); // Web assumes server is running
+      platform.lifecycle.startServer(false)
+        .then((serverUrl) => {
+          useServerStore.getState().setServerUrl(serverUrl);
+          setServerReady(true);
+        })
+        .catch(() => setServerReady(true));
       return;
     }
 
-    // Setup window close handler to check setting and stop server if needed
-    // This works in both dev and prod, but will only stop server if it was started by the app
-    platform.lifecycle.setupWindowCloseHandler().catch((error) => {
-      console.error('Failed to setup window close handler:', error);
-    });
+    platform.lifecycle.setupWindowCloseHandler().catch(console.error);
 
-    // Only auto-start server in production mode
-    // In dev mode, user runs server separately
     if (!import.meta.env?.PROD) {
-      console.log('Dev mode: Skipping auto-start of server (run it separately)');
-      setServerReady(true); // Mark as ready so UI doesn't show loading screen
-      // Mark that server was not started by app (so we don't try to stop it on close)
-      // @ts-expect-error - adding property to window
-      window.__voiceboxServerStartedByApp = false;
+      setServerReady(true);
       return;
     }
 
-    // Auto-start server in production
-    if (serverStartingRef.current) {
-      return;
-    }
-
+    if (serverStartingRef.current) return;
     serverStartingRef.current = true;
-    console.log('Production mode: Starting bundled server...');
 
-    platform.lifecycle
-      .startServer(false)
+    platform.lifecycle.startServer(false)
       .then((serverUrl) => {
-        console.log('Server is ready at:', serverUrl);
-        // Update the server URL in the store with the dynamically assigned port
         useServerStore.getState().setServerUrl(serverUrl);
         setServerReady(true);
-        // Mark that we started the server (so we know to stop it on close)
-        // @ts-expect-error - adding property to window
-        window.__voiceboxServerStartedByApp = true;
       })
       .catch((error) => {
         console.error('Failed to auto-start server:', error);
         serverStartingRef.current = false;
-        // @ts-expect-error - adding property to window
-        window.__voiceboxServerStartedByApp = false;
+        setServerReady(true); // Fail gracefully
       });
 
-    // Cleanup: stop server on actual unmount (not StrictMode remount)
-    // Note: Window close is handled separately in Tauri Rust code
     return () => {
-      // Window close event handles server shutdown based on setting
       serverStartingRef.current = false;
     };
-    // Empty dependency array - platform is stable from context, only run once
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [platform.metadata.isTauri, platform.lifecycle]);
 
-  // Cycle through loading messages every 3 seconds
   useEffect(() => {
-    if (!platform.metadata.isTauri || serverReady) {
-      return;
-    }
-
+    if (serverReady) return;
     const interval = setInterval(() => {
       setLoadingMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
-    }, 3000);
-
+    }, 2500);
     return () => clearInterval(interval);
-  }, [serverReady, platform.metadata.isTauri]);
+  }, [serverReady]);
 
-  // Show loading screen while server is starting in Tauri
-  if (platform.metadata.isTauri && !serverReady) {
+  if (!serverReady) {
     return (
-      <div
-        className={cn(
-          'min-h-screen bg-background flex items-center justify-center',
-          TOP_SAFE_AREA_PADDING,
-        )}
-      >
+      <div className="min-h-screen bg-[#08090a] flex flex-col items-center justify-center p-8 relative overflow-hidden">
         <TitleBarDragRegion />
-        <div className="text-center space-y-6">
-          <div className="flex justify-center relative">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-48 h-48 rounded-full bg-accent/20 blur-3xl" />
-            </div>
-            <img
-              src={voiceboxLogo}
-              alt="Voicebox"
-              className="w-48 h-48 object-contain animate-fade-in-scale relative z-10"
-            />
+        
+        {/* Subtle background glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-primary/20 blur-[150px] -z-10 opacity-30" />
+        
+        <motion.div 
+           initial={{ opacity: 0 }}
+           animate={{ opacity: 1 }}
+           className="flex flex-col items-center gap-8 text-center"
+        >
+          <div className="relative">
+             <Loader2 className="h-8 w-8 text-primary animate-spin opacity-50" />
           </div>
-          <div className="animate-fade-in-delayed">
-            <ShinyText
-              text={LOADING_MESSAGES[loadingMessageIndex]}
-              className="text-lg font-medium text-muted-foreground"
-              speed={2}
-              color="hsl(var(--muted-foreground))"
-              shineColor="hsl(var(--foreground))"
-            />
+
+          <div className="space-y-4">
+             <AnimatePresence mode="wait">
+               <motion.div
+                 key={loadingMessageIndex}
+                 initial={{ opacity: 0, y: 5 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 exit={{ opacity: 0, y: -5 }}
+                 transition={{ duration: 0.5 }}
+               >
+                 <ShinyText
+                    text={LOADING_MESSAGES[loadingMessageIndex]}
+                    className="text-xs font-bold tracking-[0.3em] uppercase text-muted-foreground/40"
+                    speed={2}
+                    color="rgba(255,255,255,0.1)"
+                    shineColor="rgba(255,255,255,0.6)"
+                 />
+               </motion.div>
+             </AnimatePresence>
+             <div className="w-32 h-[1px] bg-white/5 mx-auto relative overflow-hidden">
+                <motion.div 
+                  className="absolute inset-0 bg-primary/40"
+                  animate={{ left: ["-100%", "100%"] }}
+                  transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                />
+             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     );
   }
